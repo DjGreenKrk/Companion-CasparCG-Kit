@@ -112,5 +112,5 @@ For a development Companion start it with `--extra-module-path <dir>`, where
 Releases: bump the versions (module in `package.json`, each skill in `SKILL.md` and its
 `plugin.json` / `marketplace.json` entry), add the changelog sections, then push a tag
 `v<version>`; `release.yml` builds and publishes the assets. CI: `ci.yml` (formatting, unit tests,
-version checks, skill scripts, package build, release assets) and, separately,
-`companion-module-checks.yaml` (Bitfocus' own module checks: yarn lockfile, build, the module launches).
+version checks, skill scripts, package build, release assets). Bitfocus' `module-checks` workflow
+is not used: it only runs in repositories named `companion-module-<id>` (store modules).
