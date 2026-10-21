@@ -2,7 +2,7 @@
 	"id": "casparcg-server",
 	"name": "casparcg-server",
 	"shortname": "caspar",
-	"description": "CasparCG module for Companion",
+	"description": "CasparCG Server (tested on 2.5.1): playback, mixer and templates with presets, live feedback and variables",
 	"version": "0.0.0",
 	"license": "MIT",
 	"repository": "git+https://github.com/bitfocus/companion-module-casparcg-server.git",
@@ -11,13 +11,16 @@
 		{
 			"name": "Håkon Nessjøen",
 			"email": "haakon@bitfocus.io"
+		},
+		{
+			"name": "Julek (fork)"
 		}
 	],
 	"legacyIds": [
 		"casparcg"
 	],
 	"runtime": {
-		"type": "node18",
+		"type": "node22",
 		"api": "nodejs-ipc",
 		"apiVersion": "0.0.0",
 		"entrypoint": "../index.js"
@@ -29,6 +32,8 @@
 	"keywords": [
 		"Video",
 		"Software",
-		"Graphics"
+		"Graphics",
+		"Playout",
+		"AMCP"
 	]
 }
