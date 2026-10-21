@@ -43,6 +43,7 @@ class CasparInstance extends InstanceBase {
 		this.values = {}
 		this.lastErrorAt = 0
 		this.chain = Promise.resolve()
+		this.pendingClears = new Map()
 		this.polling = new Set()
 	}
 
@@ -62,6 +63,7 @@ class CasparInstance extends InstanceBase {
 	async destroy() {
 		this.stopPolling()
 		clearInterval(this.errorTimer)
+		for (const key of [...this.pendingClears.keys()]) this.cancelClear(key)
 		if (this.socket) this.socket.destroy()
 		delete this.socket
 	}
@@ -302,19 +304,56 @@ class CasparInstance extends InstanceBase {
 				this.commandError(`${action.actionId}: ${e.message}`)
 				return
 			}
-			lines = (Array.isArray(lines) ? lines : [lines]).filter(Boolean)
+			lines = (Array.isArray(lines) ? lines : [lines])
+				.filter(Boolean)
+				.map((l) => (typeof l === 'string' ? { cmd: l } : l))
 			if (!this.isConnected()) {
-				this.commandError(`Not connected - not sent: ${lines.join(' | ')}`)
+				this.commandError(`Not connected - not sent: ${lines.map((l) => l.cmd).join(' | ')}`)
 				return
 			}
 			for (let i = 0; i < lines.length; i++) {
-				const check = this.amcp.send(lines[i]).then((r) => this.checkReply(r))
+				const l = lines[i]
+				if (l.cancelClear) this.cancelClear(l.cancelClear)
+				if (l.after !== undefined) {
+					this.scheduleClear(l.key, l.after, l.cmd)
+					continue
+				}
+				const send = l.retry403 ? this.sendUntilReady(l.cmd) : this.amcp.send(l.cmd)
+				const check = send.then((r) => this.checkReply(r))
 				// a line that prepares the next one (MIXER CLEAR before PLAY) must be done first
 				if (i < lines.length - 1) await check
 			}
 		})
 		this.chain = step.catch(() => {})
 		return step
+	}
+
+	/** CG calls on a page that is still loading get 403; repeat until it answers (at most 3 s). */
+	async sendUntilReady(cmd, limitMs = 3000) {
+		const t0 = Date.now()
+		await new Promise((res) => setTimeout(res, 60)) // a fresh page needs ~60 ms (measured on 2.5.1)
+		for (;;) {
+			const r = await this.amcp.send(cmd)
+			if (r.code !== 403 || Date.now() - t0 > limitMs || !this.isConnected()) return r
+			await new Promise((res) => setTimeout(res, 25))
+		}
+	}
+
+	/** A delayed command (CLEAR after an out-animation), cancelled when the layer is used again before it fires. */
+	scheduleClear(key, ms, cmd) {
+		this.cancelClear(key)
+		this.pendingClears.set(
+			key,
+			setTimeout(() => {
+				this.pendingClears.delete(key)
+				if (this.isConnected()) this.amcp.send(cmd).then((r) => this.checkReply(r))
+			}, ms),
+		)
+	}
+
+	cancelClear(key) {
+		clearTimeout(this.pendingClears.get(key))
+		this.pendingClears.delete(key)
 	}
 
 	checkReply(r) {

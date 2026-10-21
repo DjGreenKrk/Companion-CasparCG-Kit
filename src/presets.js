@@ -175,6 +175,22 @@ module.exports = function presetDefinitions(self) {
 		),
 	)
 
+	add(
+		btn(
+			P,
+			'Custom HTML lower third show / hide',
+			`HTML\\nBELKA\\n${ch}-${cgLayer}`,
+			[[a('HTML_SHOW', { layer: cgLayer })], [a('HTML_HIDE', { layer: cgLayer })]],
+			[
+				{
+					feedbackId: 'layer_clip',
+					options: { channel: ch, layer: cgLayer, clip_dd: '', clip: 'HTML:BELKA', where: 'fg' },
+					style: { bgcolor: RED },
+				},
+			],
+		),
+	)
+
 	// --- one button per media file / template
 	const media = self.media.slice(0, MAX_MEDIA_PRESETS)
 	for (const m of media) {

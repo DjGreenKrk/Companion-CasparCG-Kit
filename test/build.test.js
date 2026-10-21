@@ -135,6 +135,12 @@ test('CG ADD with fields as JSON and XML', () => {
 	assert.strictEqual(B.cg('ADD', { ...o, variables: '', playonload: false }), 'CG 1-20 ADD 1 "TPL_BELKA" 0')
 })
 
+test('CG data: backslashes doubled for the page (2.5.1 escapes only quotes in update("..."))', () => {
+	// JSON {"k":"q\"q"} -> page must get it verbatim -> data q\\"q -> AMCP-quoted
+	assert.strictEqual(B.dataParam('{"k":"q\\"q"}'), '"{\\"k\\":\\"q\\\\\\\\\\"q\\"}"')
+	assert.strictEqual(B.dataParam('<x v="C:\\new"/>'), '"<x v=\\"C:\\\\\\\\new\\"/>"')
+})
+
 test('template data: quotes, commas and "=" inside values (text from variables)', () => {
 	const d = (variables, json = true) => B.templateData({ variables, json })
 	assert.strictEqual(d('f0="Jan "Kowal" Nowak" f1="x"'), '{"f0":"Jan \\"Kowal\\" Nowak","f1":"x"}')

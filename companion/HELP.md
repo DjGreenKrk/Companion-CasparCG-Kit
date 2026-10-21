@@ -20,6 +20,7 @@ Every field accepts variables, including **local button variables**: `$(local:na
 - **Go to position** - seconds from the start, or from the end with `-`.
 - **Mixer** - opacity / volume / brightness / saturation / contrast in %, position and size (FILL) in %, channel master volume, reset transforms, commit deferred changes. Each with duration (frames), tween and *defer*.
 - **Templates** - CG ADD / UPDATE / PLAY / NEXT / STOP / REMOVE / CLEAR / INVOKE; data as `f0="text" f1="text"` fields (sent as JSON or XML) or raw JSON/XML.
+- **Custom HTML graphic: show / hide** - your own lower third (or any graphic) as HTML + CSS typed in the action, **no template file on the server**. Put `{{f0}}`, `{{f1}}`... where texts go and fill them in *Fields* (`f0="$(local:name)" f1="$(custom:role)"`; shown as text, quotes and `<` are fine). Position the graphic in your CSS (e.g. `position:absolute; left:6vw; bottom:12vh`; `vw`/`vh` keep it the same in 720p and 1080p). Animation: slide from the left / right / bottom, wipe, fade or cut, with its time in ms - the slide and wipe are measured from the graphic, so it starts right at the frame edge. *Hide* plays the out-animation and clears the layer afterwards (pressing *show* again before that cancels the clear). Change the texts while on air with **Template: update data** on the same layer (`f1="New role"`); untick *Show at once* to load it hidden and start it with **Template: play**. **Template: next** toggles the class `next` on the graphic, so your CSS can switch something (`.next .role {...}`). Tally / variables show the layer as `HTML:<NAME>` (the graphic name). Scripts inside the HTML are not run; fonts must be installed on the server (or loaded from the internet by your CSS).
 - **Manually specify AMCP command** - raw AMCP, one command per line.
 - **Refresh media and template lists**.
 
@@ -33,10 +34,11 @@ Every field accepts variables, including **local button variables**: `$(local:na
 `server_version`, `connected`, `last_error`, `media_count`, `c<ch>_format` and per layer `c<ch>_l<layer>_clip`, `_state`, `_time`, `_remaining`, `_remaining_s`, `_duration`, `_progress`, `_loop`, `_bg` (e.g. `$(caspar:c1_l10_remaining)`).
 
 ### Presets
-Transport, status displays (on air + countdown), mixer, one Play and one Cue button per media file, show/hide per template, and two tested patterns: lower third show/hide and stinger hold/release.
+Transport, status displays (on air + countdown), mixer, one Play and one Cue button per media file, show/hide per template, a custom HTML lower third show/hide, and two tested patterns: lower third show/hide and stinger hold/release.
 
 ### Notes (measured on 2.5.1)
 - Durations in AMCP are **frames**; Companion waits are milliseconds.
 - Replies to commands for different channels can arrive out of order. The module keeps track of that, so errors in the log belong to the right command.
 - Sting mask / overlay files with spaces in the name cannot be loaded by the server - rename them.
+- Template data (JSON / XML) may contain quotes, backslashes and new lines: the server passes data to the page escaping only quotes, so the module doubles backslashes first (without that, JSON with `\"` never reached the template). Data that is neither JSON (`{...}`) nor XML (`<...>`) reaches the template as an empty string (the server reads it as the name of a stored dataset).
 - Buttons made with module 2.x keep working (same action ids; yes/no fields are converted).

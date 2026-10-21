@@ -1,6 +1,7 @@
 const B = require('./build')
 const F = require('./options')
 const { CALL_PARAMS } = require('./build')
+const H = require('./html')
 
 const YES = (id, label, def = false) => F.checkbox(id, label, def)
 
@@ -220,6 +221,39 @@ module.exports = function actionDefinitions(self) {
 			name: 'Template: call function (CG INVOKE)',
 			options: [...cgOptions(), F.text('method', 'Function name')],
 			callback: run((o) => B.cg('INVOKE', o)),
+		},
+
+		HTML_SHOW: {
+			name: 'Custom HTML graphic: show',
+			description:
+				'Your own layout (HTML + CSS) without a template file on the server. {{f0}}, {{f1}}... are filled from Fields; change them later with "Template: update data" on the same layer.',
+			options: [
+				F.channel(),
+				F.layer('20'),
+				F.text('name', 'Graphic name (tally / variables show HTML:<NAME>)', 'belka', {
+					regex: '/^[A-Za-z0-9_-]*$/',
+					useVariables: undefined,
+				}),
+				F.text('html', 'HTML (use {{f0}}, {{f1}}... for texts)', H.DEFAULT_HTML, { multiline: true }),
+				F.text('css', 'CSS', H.DEFAULT_CSS, { multiline: true }),
+				F.text('fields', 'Fields', 'f0="Jan Kowalski" f1="Reporter"', {
+					tooltip: 'f0="$(local:name)" f1="$(custom:role)" - shown as text (quotes and < > are fine)',
+				}),
+				{ type: 'dropdown', id: 'animation', label: 'Animation', default: 'slide_left', choices: H.ANIMATIONS },
+				F.number('duration', 'Animation time (ms)', '500', { isVisible: (o) => o.animation !== 'none' }),
+				YES('playonload', 'Show at once (untick to load hidden, then "Template: play")', true),
+			],
+			callback: run((o) => H.show(o)),
+		},
+		HTML_HIDE: {
+			name: 'Custom HTML graphic: hide',
+			description: 'Plays the out-animation (CG STOP), then clears the layer.',
+			options: [
+				F.channel(),
+				F.layer('20'),
+				F.number('clear_after', 'Clear the layer after (ms, empty = keep it loaded)', '600'),
+			],
+			callback: run((o) => H.hide(o)),
 		},
 
 		COMMAND: {

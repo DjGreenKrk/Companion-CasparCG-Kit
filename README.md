@@ -9,6 +9,8 @@ Changes against 2.1.2:
 - live state from `INFO <channel>` polling: tally / state / countdown feedbacks and per-layer variables
 - presets generated from the server's media and template lists
 - AMCP client that matches replies per channel (2.5.1 answers different channels out of order), handles `400` + echo and commands that never get a reply, reports the server's error with a hint
+- custom HTML graphics (own HTML + CSS, fields, slide / wipe / fade) without a template file: `PLAY [HTML]` with a small host page as a data URL, the graphic sent by `CG UPDATE`
+- template data with quotes / backslashes reaches the page (2.5.1 escapes only quotes when it calls `update()`)
 - fixes: WIPE was sent as CUT, SWAP built `NaN`, tween was always appended
 - upgrade script: buttons made with 2.x keep working
 

@@ -183,16 +183,22 @@ function masterVolume(o) {
 }
 
 /** Template data: either raw (JSON/XML as typed) or f0="John" f1="Doe" pairs (as in module 2.x). */
-function templateData(o) {
-	const raw = str(o.variables)
-	if (!raw) return null
-	if (str(o.data_format) === 'raw') return raw
+/** f0="text" f1="text" -> { f0: 'text', f1: 'text' } */
+function parsePairs(raw) {
 	const data = {}
 	// a value ends at the quote followed by the next key="..." or the end, so text from variables may contain quotes
 	const re = /([^=\s,]+?)="(.*?)"(?=[\s,]*(?:[^=\s,"]+="|$))[\s,]*/g
 	let m
 	while ((m = re.exec(raw)) !== null) data[m[1]] = m[2]
 	if (!Object.keys(data).length) throw new Error(`Template variables "${raw}" are not in the form f0="text" f1="text"`)
+	return data
+}
+
+function templateData(o) {
+	const raw = str(o.variables)
+	if (!raw) return null
+	if (str(o.data_format) === 'raw') return raw
+	const data = parsePairs(raw)
 	if (truthy(o.json)) return JSON.stringify(data)
 	const esc = (s) => s.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;')
 	let xml = '<templateData>'
@@ -202,7 +208,13 @@ function templateData(o) {
 	return xml + '</templateData>'
 }
 
-const dataParam = (d) => '"' + d.replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"'
+// CasparCG 2.5.1 hands CG data to the page as update("<data>") escaping only the quotes, so a backslash in the
+// data (JSON \" or \n, a Windows path) breaks the call or is lost. Doubling it first makes the page get the data
+// exactly as built (verified). Then the usual AMCP quoting.
+const dataParam = (d) => {
+	const amcp = (s) => '"' + s.replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"'
+	return amcp(d.replace(/\\/g, '\\\\'))
+}
 
 function cg(sub, o) {
 	const addr = address(o.channel, o.layer, { layerRequired: true })
@@ -258,7 +270,9 @@ module.exports = {
 	mixerProp,
 	mixerFill,
 	masterVolume,
+	parsePairs,
 	templateData,
+	dataParam,
 	cg,
 	swap,
 }

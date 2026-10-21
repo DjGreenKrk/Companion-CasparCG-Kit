@@ -7,6 +7,11 @@ const first = (v) => arr(v)[0]
 /** Name the way CLS/TLS show it: relative to the media/template folder, no extension, upper case. */
 function nameFromPath(path, paths) {
 	if (!path) return ''
+	if (/^data:/i.test(path)) {
+		// custom HTML graphic loaded from the command (see html.js): data:text/html;...;gfx=<name>;base64,...
+		const m = /^data:[^,]*?;gfx=([^;,]+)/i.exec(path)
+		return m ? `HTML:${m[1].toUpperCase()}` : 'HTML'
+	}
 	let p = String(path).replace(/\\/g, '/')
 	const isUrl = /^[a-z]+:\/\//i.test(p) && !/^file:\/\//i.test(p)
 	if (isUrl) return p
