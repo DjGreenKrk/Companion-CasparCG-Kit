@@ -163,3 +163,34 @@ test('SWAP (2.x built "NaN" here)', () => {
 test('sting clip names with spaces are rejected', () => {
 	assert.throws(() => B.transition({ transition: 'STING', sting_mask: 'BELKI/BELKA SPACJA' }), /space/)
 })
+
+test('CG data as an object: update({...}) by CG INVOKE', () => {
+	const o = {
+		channel: '1',
+		layer: '20',
+		templatelayer: '1',
+		pass_as: 'object',
+		template_dd: 'PRELEGENT',
+		playonload: true,
+	}
+	assert.strictEqual(
+		B.cg('UPDATE', { ...o, variables: 'name="Jan "J" Kowalski"\naccent="#c8ff67"' }),
+		'CG 1-20 INVOKE 1 "update({\\"name\\":\\"Jan \\\\\\"J\\\\\\" Kowalski\\",\\"accent\\":\\"#c8ff67\\"})"',
+	)
+	// raw call pasted as written: new lines joined, trailing ";" dropped
+	const raw = 'update({\n  name: "Jan",\n  label: "PRELEGENT"\n});'
+	assert.strictEqual(
+		B.objectCall({ data_format: 'raw', variables: raw }),
+		'update({ name: "Jan", label: "PRELEGENT" })',
+	)
+	assert.strictEqual(B.objectCall({ data_format: 'raw', variables: '{ name: "Jan" }' }), 'update({ name: "Jan" })')
+	assert.strictEqual(B.objectCall({ data_format: 'raw', variables: 'show("a")' }), 'show("a")')
+	// ADD: load without data, hand over the object, then play
+	assert.deepStrictEqual(B.cg('ADD', { ...o, data_format: 'raw', variables: raw }), [
+		'CG 1-20 ADD 1 "PRELEGENT" 0',
+		'CG 1-20 INVOKE 1 "update({ name: \\"Jan\\", label: \\"PRELEGENT\\" })"',
+		'CG 1-20 PLAY 1',
+	])
+	assert.deepStrictEqual(B.cg('ADD', { ...o, variables: '', playonload: true }), ['CG 1-20 ADD 1 "PRELEGENT" 1'])
+	assert.strictEqual(B.cg('INVOKE', { ...o, method: 'next();' }), 'CG 1-20 INVOKE 1 "next()"')
+})

@@ -208,12 +208,28 @@ function templateData(o) {
 	return xml + '</templateData>'
 }
 
+const amcpString = (s) => '"' + s.replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"'
+
 // CasparCG 2.5.1 hands CG data to the page as update("<data>") escaping only the quotes, so a backslash in the
 // data (JSON \" or \n, a Windows path) breaks the call or is lost. Doubling it first makes the page get the data
 // exactly as built (verified). Then the usual AMCP quoting.
-const dataParam = (d) => {
-	const amcp = (s) => '"' + s.replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"'
-	return amcp(d.replace(/\\/g, '\\\\'))
+const dataParam = (d) => amcpString(d.replace(/\\/g, '\\\\'))
+
+/**
+ * "Pass as object": a JS call for CG INVOKE, so the template gets update({...}) with an object instead of a string.
+ * Fields -> update({"f0":"..."}) (JSON, so quotes in values are safe). Raw: a call as typed (`update({...});`,
+ * trailing ";" removed - 2.5.1 rejects it) or an object literal that gets wrapped in update(...).
+ * INVOKE is passed to the page verbatim (no backslash doubling needed - verified on 2.5.1).
+ */
+function objectCall(o) {
+	const raw = str(o.variables)
+	if (!raw) return null
+	if (str(o.data_format) !== 'raw') return `update(${JSON.stringify(parsePairs(raw))})`
+	const one = raw
+		.replace(/\s*\n\s*/g, ' ')
+		.replace(/;\s*$/, '')
+		.trim()
+	return /^[A-Za-z_$][\w$.]*\s*\(.*\)$/.test(one) ? one : `update(${one})`
 }
 
 function cg(sub, o) {
@@ -223,12 +239,27 @@ function cg(sub, o) {
 		case 'ADD': {
 			const t = str(o.template) || str(o.template_dd)
 			if (!t) throw new Error('CG ADD needs a template')
+			const play = truthy(o.playonload)
+			if (o.pass_as === 'object') {
+				// load without data, hand over the object, then start (the server queues calls while it loads)
+				const call = objectCall(o)
+				return [
+					`CG ${addr} ADD ${hostLayer} ${quote(t)} ${call ? 0 : play ? 1 : 0}`,
+					call && `CG ${addr} INVOKE ${hostLayer} ${amcpString(call)}`,
+					call && play && `CG ${addr} PLAY ${hostLayer}`,
+				].filter(Boolean)
+			}
 			const d = templateData(o)
-			let out = `CG ${addr} ADD ${hostLayer} ${quote(t)} ${truthy(o.playonload) ? 1 : 0}`
+			let out = `CG ${addr} ADD ${hostLayer} ${quote(t)} ${play ? 1 : 0}`
 			if (d) out += ' ' + dataParam(d)
 			return out
 		}
 		case 'UPDATE': {
+			if (o.pass_as === 'object') {
+				const call = objectCall(o)
+				if (!call) throw new Error('CG UPDATE needs data')
+				return `CG ${addr} INVOKE ${hostLayer} ${amcpString(call)}`
+			}
 			const d = templateData(o)
 			if (!d) throw new Error('CG UPDATE needs data')
 			return `CG ${addr} UPDATE ${hostLayer} ${dataParam(d)}`
@@ -236,7 +267,7 @@ function cg(sub, o) {
 		case 'INVOKE': {
 			const m = str(o.method)
 			if (!m) throw new Error('CG INVOKE needs a method name')
-			return `CG ${addr} INVOKE ${hostLayer} ${quote(m)}`
+			return `CG ${addr} INVOKE ${hostLayer} ${amcpString(m.replace(/;\s*$/, ''))}`
 		}
 		case 'CLEAR':
 			return `CG ${addr} CLEAR`
@@ -273,6 +304,7 @@ module.exports = {
 	parsePairs,
 	templateData,
 	dataParam,
+	objectCall,
 	cg,
 	swap,
 }

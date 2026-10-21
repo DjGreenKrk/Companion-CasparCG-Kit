@@ -289,17 +289,33 @@ function cgDataFields() {
 	return [
 		{
 			type: 'dropdown',
+			id: 'pass_as',
+			label: 'Pass data to the template as',
+			default: 'string',
+			choices: [
+				{ id: 'string', label: 'Text (standard CG data; the template parses JSON / XML)' },
+				{ id: 'object', label: 'Object: update({...}) by CG INVOKE' },
+			],
+			tooltip:
+				'Object: for templates whose update() expects a JS object, e.g. update({ name: "Jan", accent: "#c8ff67" })',
+		},
+		{
+			type: 'dropdown',
 			id: 'data_format',
 			label: 'Data format',
 			default: 'pairs',
 			choices: [
-				{ id: 'pairs', label: 'Fields: f0="text" f1="text"' },
-				{ id: 'raw', label: 'Raw (JSON or XML as typed)' },
+				{ id: 'pairs', label: 'Fields: name="text" role="text"' },
+				{ id: 'raw', label: 'Raw (as typed: JSON / XML, or update({...}) for object)' },
 			],
 		},
-		F.checkbox('json', 'Send fields as JSON (HTML templates)', true, { isVisible: (o) => o.data_format !== 'raw' }),
+		F.checkbox('json', 'Send fields as JSON (HTML templates)', true, {
+			isVisible: (o) => o.data_format !== 'raw' && o.pass_as !== 'object',
+		}),
 		F.text('variables', 'Data', '', {
-			tooltip: 'Fields: f0="John Doe" f1="$(local:title)". Raw: {"f0":"John"}',
+			multiline: true,
+			tooltip:
+				'Fields: name="$(local:name)" role="$(custom:role)" - quotes in variable values are safe. Raw: {"f0":"John"}, or with Object: update({ name: "$(local:name)" })',
 		}),
 	]
 }
