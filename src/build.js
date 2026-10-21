@@ -188,7 +188,8 @@ function templateData(o) {
 	if (!raw) return null
 	if (str(o.data_format) === 'raw') return raw
 	const data = {}
-	const re = /([^=\s,]+?)="([^"]*)"[ ,]*/g
+	// a value ends at the quote followed by the next key="..." or the end, so text from variables may contain quotes
+	const re = /([^=\s,]+?)="(.*?)"(?=[\s,]*(?:[^=\s,"]+="|$))[\s,]*/g
 	let m
 	while ((m = re.exec(raw)) !== null) data[m[1]] = m[2]
 	if (!Object.keys(data).length) throw new Error(`Template variables "${raw}" are not in the form f0="text" f1="text"`)

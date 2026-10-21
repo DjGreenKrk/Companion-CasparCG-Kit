@@ -135,6 +135,17 @@ test('CG ADD with fields as JSON and XML', () => {
 	assert.strictEqual(B.cg('ADD', { ...o, variables: '', playonload: false }), 'CG 1-20 ADD 1 "TPL_BELKA" 0')
 })
 
+test('template data: quotes, commas and "=" inside values (text from variables)', () => {
+	const d = (variables, json = true) => B.templateData({ variables, json })
+	assert.strictEqual(d('f0="Jan "Kowal" Nowak" f1="x"'), '{"f0":"Jan \\"Kowal\\" Nowak","f1":"x"}')
+	assert.strictEqual(d('f0="a=b, c", f1="Kraków"'), '{"f0":"a=b, c","f1":"Kraków"}')
+	assert.strictEqual(d('f0="" f1="x"'), '{"f0":"","f1":"x"}')
+	assert.strictEqual(
+		d('f0="<b>&"', false),
+		'<templateData><componentData id="f0"><data id="text" value="&lt;b>&amp;" /></componentData></templateData>',
+	)
+})
+
 test('SWAP (2.x built "NaN" here)', () => {
 	assert.strictEqual(
 		B.swap({ channel1: '1', layer1: '10', channel2: '2', layer2: '10', transforms: true }),
