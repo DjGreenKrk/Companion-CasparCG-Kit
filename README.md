@@ -2,7 +2,7 @@
 
 ### GreenCrew module for Bitfocus Companion and AI skills for CasparCG playout
 
-[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE) [![CI](https://github.com/DjGreenKrk/Companion-CasparCG-Kit/actions/workflows/ci.yml/badge.svg)](https://github.com/DjGreenKrk/Companion-CasparCG-Kit/actions/workflows/ci.yml) [![Latest release](https://img.shields.io/github/v/release/DjGreenKrk/Companion-CasparCG-Kit?include_prereleases&label=release)](https://github.com/DjGreenKrk/Companion-CasparCG-Kit/releases) [![Release date](https://img.shields.io/github/release-date-pre/DjGreenKrk/Companion-CasparCG-Kit?label=released)](https://github.com/DjGreenKrk/Companion-CasparCG-Kit/releases) [![Last commit](https://img.shields.io/github/last-commit/DjGreenKrk/Companion-CasparCG-Kit)](https://github.com/DjGreenKrk/Companion-CasparCG-Kit/commits) [![Status: beta](https://img.shields.io/badge/status-beta-orange.svg)](ROADMAP.md)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE) [![CI](https://github.com/DjGreenKrk/Companion-CasparCG-Kit/actions/workflows/ci.yml/badge.svg)](https://github.com/DjGreenKrk/Companion-CasparCG-Kit/actions/workflows/ci.yml) [![Companion module checks](https://github.com/DjGreenKrk/Companion-CasparCG-Kit/actions/workflows/companion-checks.yml/badge.svg)](https://github.com/DjGreenKrk/Companion-CasparCG-Kit/actions/workflows/companion-checks.yml) [![Latest release](https://img.shields.io/github/v/release/DjGreenKrk/Companion-CasparCG-Kit?include_prereleases&label=release)](https://github.com/DjGreenKrk/Companion-CasparCG-Kit/releases) [![Release date](https://img.shields.io/github/release-date-pre/DjGreenKrk/Companion-CasparCG-Kit?label=released)](https://github.com/DjGreenKrk/Companion-CasparCG-Kit/releases) [![Last commit](https://img.shields.io/github/last-commit/DjGreenKrk/Companion-CasparCG-Kit)](https://github.com/DjGreenKrk/Companion-CasparCG-Kit/commits) [![Status: beta](https://img.shields.io/badge/status-beta-orange.svg)](ROADMAP.md)
 
 **Companion CasparCG Kit** is a Bitfocus Companion module that controls a CasparCG playout
 server, together with AI skills that write the buttons and the HTML graphics for it. Every
@@ -112,5 +112,6 @@ For a development Companion start it with `--extra-module-path <dir>`, where
 Releases: bump the versions (module in `package.json`, each skill in `SKILL.md` and its
 `plugin.json` / `marketplace.json` entry), add the changelog sections, then push a tag
 `v<version>`; `release.yml` builds and publishes the assets. CI: `ci.yml` (formatting, unit tests,
-version checks, skill scripts, package build, release assets). Bitfocus' `module-checks` workflow
-is not used: it only runs in repositories named `companion-module-<id>` (store modules).
+version checks, skill scripts, package build, release assets) and `companion-checks.yml` (the rules of
+Bitfocus' module checks - yarn lockfile, tools minimum, manifest, HELP, version = tag, the built module
+starts - without their requirement that the repository is named `companion-module-<id>`).

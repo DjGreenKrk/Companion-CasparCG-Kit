@@ -1,0 +1,94 @@
+name: Companion module checks
+
+# The rules of Bitfocus' module checks (bitfocus/actions, module-checks.yaml), written for this
+# repository. Their workflow also requires the repository to be named companion-module-<id> with the
+# same manifest id, which a kit repository with skills cannot meet; everything else is checked here
+# the same way: yarn lockfile, @companion-module/tools minimum, manifest and HELP, version = tag,
+# build with companion-module-build, and the built module starts.
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  companion:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Node.js version from the manifest runtime
+        id: node
+        run: |
+          runtime=$(node -p "require('./companion/manifest.json').runtime.type")
+          case "$runtime" in
+            node18) echo "version=18" >> "$GITHUB_OUTPUT" ;;
+            node22) echo "version=22" >> "$GITHUB_OUTPUT" ;;
+            node26) echo "version=26" >> "$GITHUB_OUTPUT" ;;
+            *) echo "::error::runtime.type '$runtime' is not node18 / node22 / node26"; exit 1 ;;
+          esac
+      - run: corepack enable
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ steps.node.outputs.version }}
+
+      - name: Yarn, not npm
+        run: |
+          if [ -f package-lock.json ]; then echo "::error::package-lock.json found - Companion modules use yarn"; exit 1; fi
+          if [ ! -f yarn.lock ]; then echo "::error::yarn.lock missing"; exit 1; fi
+
+      - name: Manifest and help
+        run: |
+          node -e '
+            const m = require("./companion/manifest.json")
+            const fail = (msg) => { console.log(`::error::${msg}`); process.exit(1) }
+            if (JSON.stringify(m).includes("your-module-name")) fail("manifest still mentions your-module-name")
+            if (!Array.isArray(m.products) || !m.products.length) fail("manifest products list is empty")
+            if (m.runtime?.apiVersion !== "0.0.0") fail("manifest runtime.apiVersion must stay 0.0.0 (filled in by the build)")
+            console.log(`manifest ${m.id}: ${m.manufacturer}: ${m.products.join(", ")}`)
+          '
+          test -f companion/HELP.md || { echo "::error::companion/HELP.md missing"; exit 1; }
+
+      - name: Version matches the tag
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          version=$(node -p "require('./package.json').version")
+          tag="${GITHUB_REF_NAME}"
+          # tags drop the -by-GC suffix of the module version (v3.0.0-beta.1 for 3.0.0-beta.1-by-GC)
+          if [ "$tag" != "v$version" ] && [ "$tag" != "$version" ] && [ "$tag" != "v${version%-by-GC}" ]; then
+            echo "::error::package.json version $version does not match tag $tag"; exit 1
+          fi
+
+      - name: Install
+        run: yarn install --frozen-lockfile --non-interactive
+
+      - name: '@companion-module/tools is new enough'
+        run: |
+          installed=$(node -p "require('@companion-module/tools/package.json').version")
+          major=${installed%%.*}
+          if [ "$major" -le 2 ]; then floor=2.8.0; elif [ "$major" -eq 3 ]; then floor=3.1.0; else floor=$installed; fi
+          lowest=$(printf '%s\n%s\n' "$installed" "$floor" | sort -V | head -n1)
+          if [ "$lowest" != "$floor" ]; then echo "::error::@companion-module/tools $installed is below $floor"; exit 1; fi
+          echo "@companion-module/tools $installed (minimum $floor)"
+
+      - name: Build and package
+        run: |
+          if node -e "process.exit(require('./package.json').scripts?.build ? 0 : 1)"; then yarn run build; fi
+          yarn companion-module-build --output=pkg
+
+      - name: The built module starts
+        timeout-minutes: 1
+        run: |
+          set +e
+          out=$(node pkg/main.js 2>&1); code=$?
+          # started outside Companion, a working module stops with "Failed to startup module" (no manifest handshake)
+          if [ $code -eq 0 ] || echo "$out" | grep -q "Failed to startup module"; then
+            echo "module loads"
+          else
+            echo "$out"; echo "::error::the built module does not load"; exit 1
+          fi
