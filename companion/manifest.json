@@ -1,19 +1,19 @@
 {
 	"id": "casparcg-server",
-	"name": "casparcg-server",
+	"name": "GreenCrew CasparCG Server",
 	"shortname": "caspar",
-	"description": "CasparCG Server by GC (fork, tested on 2.5.1): playback, mixer and templates with presets, live feedback and variables",
+	"description": "GreenCrew build of the CasparCG Server module (tested on CasparCG 2.5.1): fields instead of raw AMCP, variables in every field, live tally and countdowns, presets, templates and custom HTML graphics",
 	"version": "0.0.0",
 	"license": "MIT",
-	"repository": "git+https://github.com/bitfocus/companion-module-casparcg-server.git",
-	"bugs": "https://github.com/bitfocus/companion-module-casparcg-server/issues",
+	"repository": "git+https://github.com/DjGreenKrk/companion-module-greencrew-casparcg.git",
+	"bugs": "https://github.com/DjGreenKrk/companion-module-greencrew-casparcg/issues",
 	"maintainers": [
+		{
+			"name": "GreenCrew"
+		},
 		{
 			"name": "Håkon Nessjøen",
 			"email": "haakon@bitfocus.io"
-		},
-		{
-			"name": "GC (fork)"
 		}
 	],
 	"legacyIds": [
@@ -27,7 +27,7 @@
 	},
 	"manufacturer": "CasparCG",
 	"products": [
-		"Server (by GC)"
+		"Server (GreenCrew)"
 	],
 	"keywords": [
 		"Video",

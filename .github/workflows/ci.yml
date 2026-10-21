@@ -1,0 +1,35 @@
+name: CI
+
+# Formatting, unit tests and the Companion package for every push and pull request.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  module:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Clean install from the lockfile
+        run: npm ci --no-audit --no-fund
+      - name: Formatting
+        run: npx prettier --check src test index.js
+      - name: Unit tests
+        run: npm test
+      - name: Build the Companion package
+        run: npm run build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: companion-package
+          path: '*.tgz'
+          retention-days: 14
