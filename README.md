@@ -1,4 +1,4 @@
-# companion-module-casparcg-server (fork, 3.x)
+# companion-module-casparcg-server (fork by GC, 3.x)
 
 Fork of [bitfocus/companion-module-casparcg-server](https://github.com/bitfocus/companion-module-casparcg-server) 2.1.2.
 See [HELP.md](./companion/HELP.md) for what the module does.

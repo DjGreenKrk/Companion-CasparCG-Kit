@@ -1,4 +1,4 @@
-## CasparCG Server
+## CasparCG Server (fork by GC)
 
 Controls a CasparCG Server over AMCP (TCP 5250). Tested on CasparCG **2.5.1** with Companion 5.0/5.1.
 

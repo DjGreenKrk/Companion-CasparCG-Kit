@@ -2,7 +2,7 @@
 	"id": "casparcg-server",
 	"name": "casparcg-server",
 	"shortname": "caspar",
-	"description": "CasparCG Server (tested on 2.5.1): playback, mixer and templates with presets, live feedback and variables",
+	"description": "CasparCG Server by GC (fork, tested on 2.5.1): playback, mixer and templates with presets, live feedback and variables",
 	"version": "0.0.0",
 	"license": "MIT",
 	"repository": "git+https://github.com/bitfocus/companion-module-casparcg-server.git",
@@ -13,7 +13,7 @@
 			"email": "haakon@bitfocus.io"
 		},
 		{
-			"name": "Julek (fork)"
+			"name": "GC (fork)"
 		}
 	],
 	"legacyIds": [
@@ -27,7 +27,7 @@
 	},
 	"manufacturer": "CasparCG",
 	"products": [
-		"Server"
+		"Server (by GC)"
 	],
 	"keywords": [
 		"Video",
