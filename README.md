@@ -99,10 +99,10 @@ Each skill folder is also a Claude Code plugin (`.claude-plugin/plugin.json`) an
 ## Development
 
 ```sh
-npm ci
-npm test                          # unit tests (node:test), incl. a real INFO reply from CasparCG 2.5.1
-npx prettier --check src test index.js
-npm run build                     # casparcg-server-<version>.tgz
+yarn install                      # yarn 1 via corepack (packageManager in package.json), as Bitfocus modules use
+yarn test                         # unit tests (node:test), incl. a real INFO reply from CasparCG 2.5.1
+yarn prettier --check src test index.js
+yarn build                        # casparcg-server-<version>.tgz
 python3 tools/build_release.py    # dist/: kit ZIP, module, skills (.skill and .zip), SHA256SUMS, notes
 ```
 
@@ -112,4 +112,5 @@ For a development Companion start it with `--extra-module-path <dir>`, where
 Releases: bump the versions (module in `package.json`, each skill in `SKILL.md` and its
 `plugin.json` / `marketplace.json` entry), add the changelog sections, then push a tag
 `v<version>`; `release.yml` builds and publishes the assets. CI: `ci.yml` (formatting, unit tests,
-version checks, skill scripts, package build) and `companion-module-checks.yaml` (Bitfocus checks).
+version checks, skill scripts, package build, release assets) and, separately,
+`companion-module-checks.yaml` (Bitfocus' own module checks: yarn lockfile, build, the module launches).

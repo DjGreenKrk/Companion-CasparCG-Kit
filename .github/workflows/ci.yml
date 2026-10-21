@@ -17,21 +17,23 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+      - name: Enable corepack (yarn 1, as in package.json)
+        run: corepack enable
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-          cache: npm
+          cache: yarn
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Clean install from the lockfile
+      - name: Install from the lockfile
         run: |
-          npm ci --no-audit --no-fund
+          yarn install --frozen-lockfile --non-interactive
           pip install pyyaml
       - name: Formatting
-        run: npx prettier --check src test index.js
+        run: yarn prettier --check src test index.js
       - name: Unit tests
-        run: npm test
+        run: yarn test
       - name: Skill versions and Agent Skills rules
         run: python3 tools/build_release.py --check
       - name: Skill scripts
@@ -45,7 +47,7 @@ jobs:
           python3 skills/event-lower-third-generator/scripts/palette.py --contrast "#10180a" "#c8ff67"
       - name: Build the Companion package and the release assets
         run: |
-          npm run build
+          yarn build
           python3 tools/build_release.py
       - uses: actions/upload-artifact@v4
         with:

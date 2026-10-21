@@ -16,20 +16,22 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+      - name: Enable corepack (yarn 1, as in package.json)
+        run: corepack enable
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-          cache: npm
+          cache: yarn
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
       - name: Install
         run: |
-          npm ci --no-audit --no-fund
+          yarn install --frozen-lockfile --non-interactive
           pip install pyyaml
       - name: Test
         run: |
-          npm test
+          yarn test
           python3 tools/build_release.py --check
       - name: Tag matches the module version
         run: |
@@ -41,7 +43,7 @@ jobs:
           echo "VERSION=${version}" >> "$GITHUB_ENV"
       - name: Build
         run: |
-          npm run build
+          yarn build
           python3 tools/build_release.py
       - name: Publish the release
         env:

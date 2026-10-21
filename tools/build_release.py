@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Builds the release assets into dist/ (run after `npm run build`, which makes the module .tgz).
+"""Builds the release assets into dist/ (run after `yarn build`, which makes the module .tgz).
 
   python3 tools/build_release.py            # checks, then dist/:
     Companion-CasparCG-Kit-<version>.zip          everything: module package, both skills, docs
@@ -108,7 +108,7 @@ def main():
 
     tgz = ROOT / f"{manifest['id']}-{module_version}.tgz"
     if not tgz.exists():
-        sys.exit(f"{tgz.name} not found - run `npm run build` first")
+        sys.exit(f"{tgz.name} not found - run `yarn build` first")
     DIST.mkdir(exist_ok=True)
     for old in DIST.iterdir():
         old.unlink()

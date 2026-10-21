@@ -20,7 +20,8 @@
 		"url": "git+https://github.com/DjGreenKrk/Companion-CasparCG-Kit.git"
 	},
 	"devDependencies": {
-		"@companion-module/tools": "^2.8.0"
+		"@companion-module/tools": "^2.8.0",
+		"prettier": "^3.6.2"
 	},
 	"engines": {
 		"node": ">=18.12"
@@ -28,5 +29,6 @@
 	"bugs": {
 		"url": "https://github.com/DjGreenKrk/Companion-CasparCG-Kit/issues"
 	},
-	"homepage": "https://github.com/DjGreenKrk/Companion-CasparCG-Kit#readme"
+	"homepage": "https://github.com/DjGreenKrk/Companion-CasparCG-Kit#readme",
+	"packageManager": "yarn@1.22.22"
 }
