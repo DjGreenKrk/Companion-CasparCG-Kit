@@ -1,0 +1,22 @@
+{
+  "$schema": "https://anthropic.com/claude-code/plugin.schema.json",
+  "name": "event-lower-third-generator",
+  "version": "0.1.0",
+  "description": "Generates a set of HTML lower thirds and event graphics (speaker, timer, ticker, announcement...) for CasparCG from client materials, driven by JSON and live Companion / Ontime variables.",
+  "author": {
+    "name": "Julian Szymański / GreenCrew",
+    "url": "https://greencrew.pl"
+  },
+  "homepage": "https://github.com/DjGreenKrk/Companion-CasparCG-Kit/tree/main/skills/event-lower-third-generator",
+  "repository": "https://github.com/DjGreenKrk/Companion-CasparCG-Kit",
+  "license": "MIT",
+  "keywords": [
+    "casparcg",
+    "companion",
+    "broadcast",
+    "events"
+  ],
+  "skills": [
+    "./"
+  ]
+}

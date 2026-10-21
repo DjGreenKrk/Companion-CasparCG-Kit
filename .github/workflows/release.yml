@@ -1,0 +1,53 @@
+name: Release
+
+# Push a tag v<version> (e.g. v3.0.0-beta.1) after bumping the versions and changelogs.
+# Builds the kit and publishes a GitHub release with every part as its own asset.
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install
+        run: |
+          npm ci --no-audit --no-fund
+          pip install pyyaml
+      - name: Test
+        run: |
+          npm test
+          python3 tools/build_release.py --check
+      - name: Tag matches the module version
+        run: |
+          version=$(node -p "require('./package.json').version.replace(/-by-GC$/, '')")
+          if [ "${GITHUB_REF_NAME}" != "v${version}" ] && [ "${GITHUB_EVENT_NAME}" = "push" ]; then
+            echo "tag ${GITHUB_REF_NAME} does not match package.json version v${version}" >&2
+            exit 1
+          fi
+          echo "VERSION=${version}" >> "$GITHUB_ENV"
+      - name: Build
+        run: |
+          npm run build
+          python3 tools/build_release.py
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          prerelease=""
+          case "$VERSION" in *-*) prerelease="--prerelease" ;; esac
+          gh release create "v${VERSION}" dist/*.zip dist/*.tgz dist/*.skill dist/SHA256SUMS.txt \
+            --title "Companion CasparCG Kit ${VERSION}" --notes-file dist/RELEASE_NOTES.md $prerelease

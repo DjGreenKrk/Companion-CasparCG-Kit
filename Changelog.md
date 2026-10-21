@@ -1,4 +1,4 @@
-# GreenCrew CasparCG Server 3.0.0-beta.1
+# Companion CasparCG Kit 3.0.0-beta.1
 
 First release under the GreenCrew name. Based on bitfocus/companion-module-casparcg-server 2.1.2. Tested with Companion 5.1.0 and CasparCG Server 2.5.1.
 
@@ -9,6 +9,7 @@ First release under the GreenCrew name. Based on bitfocus/companion-module-caspa
 * [FEATURE] Templates: data as fields, JSON, XML, or a JS object passed with `CG INVOKE "update({...})"`; CG NEXT / REMOVE / CLEAR / INVOKE
 * [FEATURE] Custom HTML graphics: own HTML + CSS with `{{f0}}` fields, slide / wipe / fade, hide with delayed clear, without a template file on the server
 * [FEATURE] Raw command action takes several lines (one command per line)
+* [FEATURE] AI skills in the kit, each installable on its own (`.skill` for the Claude apps, folder `.zip`, Claude Code plugins from this repository): **casparcg-amcp-button-builder 2.0.0** (AMCP commands and Companion buttons, tested on 2.5.1) and **event-lower-third-generator 0.1.0** (HTML lower thirds and event graphics from client materials)
 * [CHANGE] AMCP replies are matched per channel: CasparCG 2.5 answers commands for different channels out of order; `400` with echo and commands without a reply are handled; server errors are shown with a hint
 * [CHANGE] Module API @companion-module/base 1.14, runtime Node.js 22
 * [BUGFIX] WIPE transition was sent as CUT

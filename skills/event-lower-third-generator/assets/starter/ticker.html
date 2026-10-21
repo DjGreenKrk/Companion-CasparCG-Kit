@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<title>Ticker</title>
+<!-- Crawl at the bottom with a label and a clock. Fields: items (list: JSON array, new lines or " | "),
+     label, speed (px/s at 1080p), clock (true/false), accent. Changing items keeps the crawl running. -->
+<link rel="stylesheet" href="kit/gfx-base.css">
+<link rel="stylesheet" href="theme.css">
+<style>
+.bar { position: absolute; left: 0; right: 0; bottom: 0; height: 76px; display: flex; font-family: var(--font); }
+.tag { flex: none; display: flex; align-items: center; padding: 0 34px 0 var(--safe-x); background: var(--accent);
+       color: var(--accent-ink); font-size: 24px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; }
+.crawl { position: relative; flex: 1; overflow: hidden; background: var(--plate); }
+.track { position: absolute; top: 0; bottom: 0; left: 0; display: flex; align-items: center; white-space: nowrap; will-change: transform; }
+.item { display: inline-flex; align-items: center; color: var(--ink); font-size: 32px; font-weight: 600; }
+.item::after { content: ""; width: 10px; height: 10px; margin: 0 36px; background: var(--accent); transform: rotate(45deg); }
+.time { flex: none; display: flex; align-items: center; padding: 0 var(--safe-x) 0 32px; background: var(--plate-2);
+        color: var(--ink); font-size: 34px; font-weight: 700; font-variant-numeric: tabular-nums; }
+
+.bar { transform: translateY(100%); }
+.bar.is-in { animation: up var(--t-in) var(--ease-in) both; }
+.bar.is-out { animation: down var(--t-out) var(--ease-out) both; }
+@keyframes up { from { transform: translateY(100%); } to { transform: none; } }
+@keyframes down { from { transform: none; } to { transform: translateY(100%); } }
+</style>
+</head>
+<body>
+<div class="gfx-viewport"><div class="gfx-stage">
+	<section class="bar" data-gfx>
+		<div class="tag" data-field="label" data-show="label"></div>
+		<div class="crawl" id="crawl"><div class="track" id="track"></div></div>
+		<div class="time" id="time"></div>
+	</section>
+</div></div>
+<script src="kit/gfx.js"></script>
+<script>
+const crawl = document.getElementById('crawl')
+const track = document.getElementById('track')
+let x = 0, loopW = 0, last = null, running = false
+
+function build(items) {
+	// one group of items, repeated until it is wider than the crawl, then doubled for a seamless loop
+	track.replaceChildren()
+	if (!items.length) { loopW = 0; return }
+	const group = document.createElement('div')
+	group.style.display = 'flex'
+	track.append(group)
+	do {
+		for (const t of items) {
+			const s = document.createElement('span')
+			s.className = 'item'
+			s.textContent = t
+			group.append(s)
+		}
+	} while (group.offsetWidth < crawl.clientWidth + 200 && group.childElementCount < 200)
+	loopW = group.offsetWidth
+	track.append(group.cloneNode(true))
+	if (x <= -loopW) x %= loopW
+}
+
+function frame(ts) {
+	if (last !== null && running && loopW) {
+		x -= (Math.min(ts - last, 80) / 1000) * GFX.state().speed // no catch-up jumps after a stall
+		if (x <= -loopW) x += loopW
+		track.style.transform = `translateX(${x}px)`
+	}
+	last = ts
+	requestAnimationFrame(frame)
+}
+requestAnimationFrame(frame)
+GFX.clock(document.getElementById('time'), { timeZone: 'Europe/Warsaw' })
+
+GFX.define({
+	fields: {
+		items: { label: 'Wiadomości (każda w nowej linii)', type: 'list', sample: ['Witamy na konferencji', 'Kolejny panel o 14:30 w sali A', 'Wi-Fi: Event / hasło na identyfikatorze'] },
+		label: { label: 'Etykieta', default: 'NA ŻYWO' },
+		speed: { label: 'Prędkość (px/s)', type: 'number', default: 120 },
+		clock: { label: 'Zegar (true/false)', type: 'bool', default: true },
+		accent: { label: 'Kolor akcentu', type: 'color', default: '#c8ff67' },
+	},
+	aliases: { f0: 'items', ticker: 'items', messages: 'items' },
+	outMs: 450,
+	render(s, changed) {
+		if (changed.includes('items')) build(s.items)
+		if (changed.includes('clock')) document.getElementById('time').hidden = !s.clock
+	},
+	onPlay() { running = true; last = null },
+	onStop() { setTimeout(() => (running = false), 450) },
+})
+</script>
+</body>
+</html>

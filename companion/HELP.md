@@ -1,6 +1,6 @@
-## GreenCrew CasparCG Server
+## Companion CasparCG Kit
 
-Controls a CasparCG Server over AMCP (TCP 5250). GreenCrew build of the Bitfocus module, tested on CasparCG **2.5.1** with Companion **5.1.0**. Buttons made with the official module (2.x) keep working.
+Companion module that controls a CasparCG Server over AMCP (TCP 5250). GreenCrew build of the Bitfocus module, tested on CasparCG **2.5.1** with Companion **5.1.0**. Buttons made with the official module (2.x) keep working.
 
 ### Setup
 - **CasparCG server IP / AMCP port** - the server; the media scanner must run for the clip and template lists.

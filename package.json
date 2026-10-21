@@ -1,7 +1,7 @@
 {
 	"name": "casparcg-server",
 	"version": "3.0.0-beta.1-by-GC",
-	"description": "GreenCrew build of the Bitfocus Companion module for CasparCG Server",
+	"description": "Companion CasparCG Kit by GreenCrew - Bitfocus Companion module for CasparCG Server, with AI skills",
 	"author": "Julian Szymański / GreenCrew",
 	"main": "index.js",
 	"scripts": {
@@ -17,7 +17,7 @@
 	},
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/DjGreenKrk/companion-module-greencrew-casparcg.git"
+		"url": "git+https://github.com/DjGreenKrk/Companion-CasparCG-Kit.git"
 	},
 	"devDependencies": {
 		"@companion-module/tools": "^2.8.0"
@@ -26,7 +26,7 @@
 		"node": ">=18.12"
 	},
 	"bugs": {
-		"url": "https://github.com/DjGreenKrk/companion-module-greencrew-casparcg/issues"
+		"url": "https://github.com/DjGreenKrk/Companion-CasparCG-Kit/issues"
 	},
-	"homepage": "https://github.com/DjGreenKrk/companion-module-greencrew-casparcg#readme"
+	"homepage": "https://github.com/DjGreenKrk/Companion-CasparCG-Kit#readme"
 }

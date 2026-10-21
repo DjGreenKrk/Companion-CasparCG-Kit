@@ -1,0 +1,35 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "companion-casparcg-kit",
+  "description": "GreenCrew skills for CasparCG playout and event graphics (companions to the Companion CasparCG Kit Companion module)",
+  "owner": {
+    "name": "GreenCrew",
+    "url": "https://greencrew.pl"
+  },
+  "plugins": [
+    {
+      "name": "casparcg-amcp-button-builder",
+      "description": "Writes, reviews and debugs CasparCG AMCP commands and the Bitfocus Companion buttons that send them (lower thirds, stingers, intros, transitions, mixer, templates), with facts tested on CasparCG 2.5.1.",
+      "version": "2.0.0",
+      "author": {
+        "name": "Julian Szymański / GreenCrew",
+        "url": "https://greencrew.pl"
+      },
+      "source": "./skills/casparcg-amcp-button-builder",
+      "category": "productivity",
+      "homepage": "https://github.com/DjGreenKrk/Companion-CasparCG-Kit/tree/main/skills/casparcg-amcp-button-builder"
+    },
+    {
+      "name": "event-lower-third-generator",
+      "description": "Generates a set of HTML lower thirds and event graphics (speaker, timer, ticker, announcement...) for CasparCG from client materials, driven by JSON and live Companion / Ontime variables.",
+      "version": "0.1.0",
+      "author": {
+        "name": "Julian Szymański / GreenCrew",
+        "url": "https://greencrew.pl"
+      },
+      "source": "./skills/event-lower-third-generator",
+      "category": "productivity",
+      "homepage": "https://github.com/DjGreenKrk/Companion-CasparCG-Kit/tree/main/skills/event-lower-third-generator"
+    }
+  ]
+}

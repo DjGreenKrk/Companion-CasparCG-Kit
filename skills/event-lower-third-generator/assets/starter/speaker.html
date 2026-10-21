@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<title>Speaker</title>
+<!-- Speaker lower third. Fields: name, role, company, label, accent, photo, logo.
+     CasparCG: CG 1-20 ADD 1 "<package>/speaker" 1 "{\"name\":\"Jan Kowalski\",\"role\":\"CEO\"}"
+     or object: CG ADD ... 0, CG INVOKE 1 "update({name:\"Jan\",role:\"CEO\"})", CG PLAY 1 -->
+<link rel="stylesheet" href="kit/gfx-base.css">
+<link rel="stylesheet" href="theme.css">
+<style>
+.lt { position: absolute; left: var(--lt-left); bottom: var(--lt-bottom); display: flex; align-items: flex-end; gap: 0;
+      font-family: var(--font); }
+.photo { width: 168px; height: 168px; object-fit: cover; border-radius: var(--radius) 0 0 var(--radius); }
+.label { display: inline-block; margin-left: 12px; padding: 8px 18px; background: var(--accent); color: var(--accent-ink);
+         font-size: 20px; font-weight: 700; letter-spacing: .2em; text-transform: uppercase; border-radius: var(--radius) var(--radius) 0 0; }
+.plate { position: relative; min-width: 560px; max-width: 1100px; padding: 26px 48px 28px 44px; background: var(--plate);
+         border-left: 8px solid var(--accent); border-radius: 0 var(--radius) var(--radius) var(--radius); box-shadow: var(--shadow); }
+.name { color: var(--ink); font-family: var(--font-display); font-size: 62px; font-weight: 700; line-height: 1.1;
+        white-space: nowrap; overflow: hidden; max-width: 1000px; }
+.details { display: flex; gap: 14px; align-items: center; margin-top: 8px; font-size: 28px; color: var(--ink-2); white-space: nowrap; }
+.company { color: var(--accent); font-weight: 700; }
+.dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
+.logo { position: absolute; right: 28px; top: 50%; height: 64px; transform: translateY(-50%); }
+
+/* animation: plate slides in from the left edge of the frame, label and texts follow */
+.lt { transform: translateX(calc(-100% - var(--lt-left))); }
+.lt.is-in { animation: lt-in var(--t-in) var(--ease-in) both; }
+.lt.is-out { animation: lt-out var(--t-out) var(--ease-out) both; }
+@keyframes lt-in { from { transform: translateX(calc(-100% - var(--lt-left))); } to { transform: none; } }
+@keyframes lt-out { from { transform: none; } to { transform: translateX(calc(-100% - var(--lt-left))); } }
+.lt.is-in .label { animation: fade-up 400ms var(--ease-in) 250ms both; }
+@keyframes fade-up { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+</style>
+</head>
+<body>
+<div class="gfx-viewport"><div class="gfx-stage">
+	<section class="lt" data-gfx>
+		<img class="photo" data-field="photo" alt="">
+		<div>
+			<div class="label" data-field="label" data-show="label"></div>
+			<div class="plate">
+				<div class="name" data-field="name" data-fit="36"></div>
+				<div class="details">
+					<span data-field="role"></span>
+					<span class="dot" data-show="company"></span>
+					<span class="company" data-field="company"></span>
+				</div>
+				<img class="logo" data-field="logo" alt="">
+			</div>
+		</div>
+	</section>
+</div></div>
+<script src="kit/gfx.js"></script>
+<script>
+GFX.define({
+	fields: {
+		name: { label: 'Imię i nazwisko', sample: 'Aleksandra Nowak' },
+		role: { label: 'Funkcja', sample: 'Dyrektorka kreatywna' },
+		company: { label: 'Firma', sample: 'Example Group' },
+		label: { label: 'Etykieta', default: 'PRELEGENT' },
+		accent: { label: 'Kolor akcentu', type: 'color', default: '#c8ff67' },
+		photo: { label: 'Zdjęcie (ścieżka)', type: 'image' },
+		logo: { label: 'Logo (ścieżka)', type: 'image' },
+	},
+	aliases: { f0: 'name', f1: 'role', f2: 'company', title: 'role', organization: 'company' },
+	outMs: 450,
+	render(s) {
+		document.querySelector('.details').hidden = !s.role && !s.company
+		document.querySelector('.dot').hidden = !(s.role && s.company)
+	},
+})
+</script>
+</body>
+</html>

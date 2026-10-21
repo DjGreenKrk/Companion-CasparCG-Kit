@@ -1,0 +1,7 @@
+{
+  "speaker": { "name": "Jan Kowalski", "role": "Prezes Zarządu", "company": "Example Group", "label": "PRELEGENT", "photo": "img/kowalski.jpg" },
+  "timer": { "title": "Przerwa kawowa", "label": "WRACAMY ZA", "target": "14:30" },
+  "timer_live": { "title": "Przerwa", "companion": "192.168.1.10:8000", "live": "remaining=ontime:timer_current_hms, phase=ontime:timer_phase" },
+  "ticker": { "items": ["Witamy na konferencji", "Kolejny panel o 14:30 w sali A"], "label": "NA ŻYWO", "speed": 120 },
+  "announcement": { "label": "KOMUNIKAT", "title": "Zmiana w programie", "text": "Panel rozpocznie się o 15:15 w sali B." }
+}

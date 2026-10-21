@@ -1,12 +1,12 @@
 {
 	"id": "casparcg-server",
-	"name": "GreenCrew CasparCG Server",
+	"name": "Companion CasparCG Kit",
 	"shortname": "caspar",
-	"description": "GreenCrew build of the CasparCG Server module (tested on CasparCG 2.5.1): fields instead of raw AMCP, variables in every field, live tally and countdowns, presets, templates and custom HTML graphics",
+	"description": "GreenCrew module for CasparCG Server (tested on 2.5.1): fields instead of raw AMCP, variables in every field, live tally and countdowns, presets, templates and custom HTML graphics",
 	"version": "0.0.0",
 	"license": "MIT",
-	"repository": "git+https://github.com/DjGreenKrk/companion-module-greencrew-casparcg.git",
-	"bugs": "https://github.com/DjGreenKrk/companion-module-greencrew-casparcg/issues",
+	"repository": "git+https://github.com/DjGreenKrk/Companion-CasparCG-Kit.git",
+	"bugs": "https://github.com/DjGreenKrk/Companion-CasparCG-Kit/issues",
 	"maintainers": [
 		{
 			"name": "GreenCrew"

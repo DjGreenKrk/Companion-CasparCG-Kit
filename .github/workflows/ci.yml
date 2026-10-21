@@ -1,6 +1,7 @@
 name: CI
 
-# Formatting, unit tests and the Companion package for every push and pull request.
+# Module: formatting, unit tests, package. Skills: versions agree across SKILL.md / plugin.json /
+# marketplace.json, the skill scripts run, the starter graphics pass their own linter.
 on:
   push:
     branches: [main]
@@ -11,7 +12,7 @@ permissions:
   contents: read
 
 jobs:
-  module:
+  kit:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
@@ -20,16 +21,34 @@ jobs:
         with:
           node-version: '22'
           cache: npm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
       - name: Clean install from the lockfile
-        run: npm ci --no-audit --no-fund
+        run: |
+          npm ci --no-audit --no-fund
+          pip install pyyaml
       - name: Formatting
         run: npx prettier --check src test index.js
       - name: Unit tests
         run: npm test
-      - name: Build the Companion package
-        run: npm run build
+      - name: Skill versions and Agent Skills rules
+        run: python3 tools/build_release.py --check
+      - name: Skill scripts
+        run: |
+          python3 -m py_compile skills/*/scripts/*.py
+          node --check skills/event-lower-third-generator/assets/kit/gfx.js
+          starter=$(mktemp -d)
+          cp -r skills/event-lower-third-generator/assets/starter/. "$starter"
+          cp -r skills/event-lower-third-generator/assets/kit "$starter/kit"
+          python3 skills/event-lower-third-generator/scripts/check_graphics.py "$starter"
+          python3 skills/event-lower-third-generator/scripts/palette.py --contrast "#10180a" "#c8ff67"
+      - name: Build the Companion package and the release assets
+        run: |
+          npm run build
+          python3 tools/build_release.py
       - uses: actions/upload-artifact@v4
         with:
-          name: companion-package
-          path: '*.tgz'
+          name: release-assets
+          path: dist/
           retention-days: 14

@@ -1,4 +1,4 @@
-# GreenCrew CasparCG Server roadmap
+# Companion CasparCG Kit roadmap
 
 Work left out of 3.0.0-beta.1. Each item is a separate change, taken on when it brings a real
 benefit.

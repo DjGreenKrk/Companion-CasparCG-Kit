@@ -1,12 +1,13 @@
-# GreenCrew CasparCG Server — branding
+# Companion CasparCG Kit — branding
 
-GreenCrew CasparCG Server belongs to GreenCrew Tools. Shared branding, design and writing rules
+Companion CasparCG Kit belongs to GreenCrew Tools. Shared branding, design and writing rules
 live in [GreenCrew_Tools_Docs](https://github.com/DjGreenKrk/GreenCrew_Tools_Docs) and are not
 copied here.
 
 ## Name
 
-- Product name: **GreenCrew CasparCG Server** (manifest `name`, README, HELP).
+- Product name: **Companion CasparCG Kit** (repository `Companion-CasparCG-Kit`, manifest `name`, README, HELP): a Companion module for CasparCG plus AI skills. GreenCrew appears in the subtitle, the descriptions and the author line, not in the name, so it does not read as a fork of CasparCG itself.
+- Skills: `casparcg-amcp-button-builder`, `event-lower-third-generator` (named like the other GreenCrew event skills: system, object, action).
 - In Companion's module list: **CasparCG: Server (GreenCrew)** — Companion builds that label from
   `manufacturer` and `products`, so the manufacturer stays `CasparCG`.
 - Version suffix `-by-GC` (e.g. `3.0.0-beta.1-by-GC`) tells it apart from the official module in

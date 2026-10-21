@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<title>Announcement</title>
+<!-- Announcement / info box (programme change, "next up", Wi-Fi, Q&A address). Fields: label, title, text, accent.
+     text wraps to at most 3 lines and shrinks to fit. -->
+<link rel="stylesheet" href="kit/gfx-base.css">
+<link rel="stylesheet" href="theme.css">
+<style>
+.box { position: absolute; left: var(--lt-left); bottom: var(--lt-bottom); width: 1100px; font-family: var(--font);
+       background: var(--plate); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; }
+.head { display: flex; align-items: center; gap: 18px; padding: 16px 36px; background: var(--accent); color: var(--accent-ink); }
+.label { font-size: 22px; font-weight: 700; letter-spacing: .2em; text-transform: uppercase; }
+.title { font-size: 34px; font-weight: 700; white-space: nowrap; overflow: hidden; }
+.text { margin: 22px 36px 26px; max-height: 3.6em; overflow: hidden; color: var(--ink); font-size: 36px; line-height: 1.2;
+        text-wrap: balance; }
+
+.box { clip-path: inset(0 100% 0 0); }
+.box.is-in { animation: wipe-in var(--t-in) var(--ease-in) both; }
+.box.is-out { animation: wipe-out var(--t-out) var(--ease-out) both; }
+@keyframes wipe-in { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
+@keyframes wipe-out { from { clip-path: inset(0 0 0 0); } to { clip-path: inset(0 0 0 100%); } }
+.box.is-in .text { animation: fade 500ms ease 300ms both; }
+@keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+</style>
+</head>
+<body>
+<div class="gfx-viewport"><div class="gfx-stage">
+	<section class="box" data-gfx>
+		<div class="head"><span class="label" data-field="label"></span><span class="title" data-field="title" data-fit="22"></span></div>
+		<div class="text" data-field="text" data-fit="24"></div>
+	</section>
+</div></div>
+<script src="kit/gfx.js"></script>
+<script>
+GFX.define({
+	fields: {
+		label: { label: 'Etykieta', default: 'KOMUNIKAT' },
+		title: { label: 'Tytuł', sample: 'Zmiana w programie' },
+		text: { label: 'Treść', sample: 'Panel „Przyszłość mediów” rozpocznie się o 15:15 w sali B.' },
+		accent: { label: 'Kolor akcentu', type: 'color', default: '#c8ff67' },
+	},
+	aliases: { f0: 'title', f1: 'text' },
+	outMs: 450,
+})
+</script>
+</body>
+</html>

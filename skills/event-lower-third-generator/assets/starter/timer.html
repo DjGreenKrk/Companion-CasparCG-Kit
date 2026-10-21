@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<title>Timer</title>
+<!-- Countdown / break timer. Two ways to drive it:
+     1) live value from Companion (e.g. Ontime): remaining="$(ontime:timer_current_hms)" phase="$(ontime:timer_phase)"
+        sent with CG UPDATE on every change (Companion trigger "variable changed").
+     2) self-running: target="14:30" (wall clock, Europe/Warsaw) or an ISO date; one update, no traffic during the show.
+     Fields: title, label, remaining, target, phase, warn, danger, accent. -->
+<link rel="stylesheet" href="kit/gfx-base.css">
+<link rel="stylesheet" href="theme.css">
+<style>
+.timer { position: absolute; right: var(--lt-left); bottom: var(--lt-bottom); display: flex; align-items: stretch;
+         font-family: var(--font); box-shadow: var(--shadow); border-radius: var(--radius); overflow: hidden; }
+.info { padding: 22px 34px; background: var(--plate); display: flex; flex-direction: column; justify-content: center; max-width: 900px; }
+.label { color: var(--accent); font-size: 20px; font-weight: 700; letter-spacing: .2em; text-transform: uppercase; }
+.title { color: var(--ink); font-size: 40px; font-weight: 700; white-space: nowrap; overflow: hidden; }
+.clock { min-width: 270px; padding: 0 36px; display: flex; align-items: center; justify-content: center;
+         background: var(--accent); color: var(--accent-ink); font-size: 84px; font-weight: 700;
+         font-variant-numeric: tabular-nums; transition: background .3s, color .3s; }
+.timer.warning .clock { background: var(--warn); }
+.timer.danger .clock, .timer.overtime .clock { background: var(--danger); color: #fff; }
+.timer.overtime .clock { animation: blink 1s steps(2, start) infinite; }
+@keyframes blink { 50% { opacity: .55; } }
+
+.timer { transform: translateY(calc(100% + var(--lt-bottom))); }
+.timer.is-in { animation: up var(--t-in) var(--ease-in) both; }
+.timer.is-out { animation: down var(--t-out) var(--ease-out) both; }
+@keyframes up { from { transform: translateY(calc(100% + var(--lt-bottom))); } to { transform: none; } }
+@keyframes down { from { transform: none; } to { transform: translateY(calc(100% + var(--lt-bottom))); } }
+</style>
+</head>
+<body>
+<div class="gfx-viewport"><div class="gfx-stage">
+	<section class="timer" data-gfx>
+		<div class="info" data-show="title">
+			<div class="label" data-field="label" data-show="label"></div>
+			<div class="title" data-field="title" data-fit="26"></div>
+		</div>
+		<div class="clock" id="clock">--:--</div>
+	</section>
+</div></div>
+<script src="kit/gfx.js"></script>
+<script>
+const el = document.getElementById('clock')
+const root = document.querySelector('[data-gfx]')
+let ticker = null
+
+function show(sec, phase) {
+	el.textContent = GFX.formatDuration(sec)
+	const s = GFX.state()
+	// phase from the controller (Ontime: default / warning / danger / overtime) or from the thresholds
+	if (!phase && sec != null) phase = sec < 0 ? 'overtime' : sec <= s.danger ? 'danger' : sec <= s.warn ? 'warning' : ''
+	root.classList.remove('warning', 'danger', 'overtime')
+	if (['warning', 'danger', 'overtime'].includes(phase)) root.classList.add(phase)
+}
+
+GFX.define({
+	fields: {
+		title: { label: 'Tytuł', sample: 'Przerwa kawowa' },
+		label: { label: 'Etykieta', default: 'WRACAMY ZA' },
+		remaining: { label: 'Pozostało (hh:mm:ss, -mm:ss = po czasie)', type: 'time' },
+		target: { label: 'Odliczaj do (HH:MM albo data ISO)', sample: '' },
+		phase: { label: 'Faza (default/warning/danger/overtime)' },
+		warn: { label: 'Ostrzeżenie od (s)', type: 'number', default: 60 },
+		danger: { label: 'Alarm od (s)', type: 'number', default: 10 },
+		accent: { label: 'Kolor akcentu', type: 'color', default: '#c8ff67' },
+	},
+	aliases: { f0: 'title', f1: 'remaining', time: 'remaining', timer: 'remaining' },
+	outMs: 450,
+	render(s, changed) {
+		if (changed.includes('target')) {
+			clearInterval(ticker)
+			ticker = s.target ? GFX.countdown(s.target, (sec) => show(sec, null)) : null // own thresholds, not a stale live phase
+		}
+		if (!s.target && (changed.includes('remaining') || changed.includes('phase'))) show(s.remaining, s.phase)
+	},
+})
+</script>
+</body>
+</html>
