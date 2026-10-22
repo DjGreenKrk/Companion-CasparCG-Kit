@@ -2,12 +2,13 @@
 # yarn lockfile v1
 
 
-"@companion-module/base@~2.1.3":
-  version "2.1.3"
-  resolved "https://registry.yarnpkg.com/@companion-module/base/-/base-2.1.3.tgz#794d6b6426c45c75c10e46d313cdf495b0da3bad"
-  integrity sha512-/Sf4qL+e3fSf3abcqIcMUQSTCO4tytdImQ+mUl2c0hJh3V+ne/audMtJX8NIHoJGlHgJOAMv5Xt6QFYiyJ4o3g==
+"@companion-module/base@~2.2.1":
+  version "2.2.1"
+  resolved "https://registry.yarnpkg.com/@companion-module/base/-/base-2.2.1.tgz#59a5981eabe8175183672d74a2821104a4847148"
+  integrity sha512-tJc3uLtA9rF9Lgda5TzJj/STEPDdbNqz3teRnCvkfaaqJgKlnhviK6I+x+FCYEBkxFtSLaqYz67jjRolRtiZvQ==
   dependencies:
-    colord "^2.9.3"
+    colord "^2.10.0"
+    zod "^4.6.5"
 
 "@companion-module/tools@^3.1.1":
   version "3.2.0"
@@ -199,7 +200,7 @@ chownr@^3.0.0:
   resolved "https://registry.yarnpkg.com/chownr/-/chownr-3.0.0.tgz#9855e64ecd240a9cc4267ce8a4aa5d24a1da15e4"
   integrity sha512-+IxzY9BZOQd/XuYPRmrvEVjF/nqj5kgT4kEq7VofrDoM1MxoRjEWkrCC3EtLi59TVawxTAn+orJwFQcrqEN1+g==
 
-colord@^2.9.3:
+colord@^2.10.0:
   version "2.10.0"
   resolved "https://registry.yarnpkg.com/colord/-/colord-2.10.0.tgz#56c9050e6b06b4b6c62ddec366a48d65ef57e860"
   integrity sha512-AidJptpBJmjTclAp9BkLwJi0T93fo5epJnbaZslpg6QVzpHjAiveF55mE9AcUJiGMqRHgMDY8soMsQtuNYMHfw==
@@ -469,6 +470,11 @@ yocto-queue@^1.0.0:
   version "1.2.2"
   resolved "https://registry.yarnpkg.com/yocto-queue/-/yocto-queue-1.2.2.tgz#3e09c95d3f1aa89a58c114c99223edf639152c00"
   integrity sha512-4LCcse/U2MHZ63HAJVE+v71o7yOdIe4cZ70Wpf8D/IyjDKYQLV5GD46B+hSTjJsvV5PztjvHoU580EftxjDZFQ==
+
+zod@^4.6.5:
+  version "4.6.7"
+  resolved "https://registry.yarnpkg.com/zod/-/zod-4.6.7.tgz#e806cf64a7f4e37635ce9f2f52c04c3766f75e5b"
+  integrity sha512-g8W2D2kU6a8untc053fX1uVBKzM7yqAxW/3zwk83+6RyF2+SKOuV+c0wBDhUwzV1PaGapmZH+rmcUzPf+3CGwg==
 
 zx@^8.8.5:
   version "8.8.5"

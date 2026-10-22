@@ -1,6 +1,6 @@
 ## Companion CasparCG Kit
 
-Companion module that controls a CasparCG Server over AMCP (TCP 5250). GreenCrew build of the Bitfocus module, tested on CasparCG **2.5.1** with Companion **5.1.0**. Buttons made with the official module (2.x) keep working.
+Companion module that controls a CasparCG Server over AMCP (TCP 5250). GreenCrew build of the Bitfocus module, tested on CasparCG **2.5.1** with Companion **5.1.1** (needs Companion 5.1 or newer). Buttons made with the official module (2.x) keep working.
 
 ### Setup
 - **CasparCG server IP / AMCP port** - the server; the media scanner must run for the clip and template lists.
@@ -9,7 +9,7 @@ Companion module that controls a CasparCG Server over AMCP (TCP 5250). GreenCrew
 - **Preset channel / layers** - presets are generated for this channel, clip layer and template layer.
 
 ### Actions
-Every field accepts variables, including **local button variables**: `$(local:name)`, `$(custom:x)`, `$(caspar:c1_l10_clip)`. Companion replaces them before the module runs the action, and any field can be switched to an **expression** (e.g. a layer `10 + $(local:n)`), except the dropdowns and checkboxes that show or hide other fields. Needs Companion 5.0 or newer.
+Every field accepts variables, including **local button variables**: `$(local:name)`, `$(custom:x)`, `$(caspar:c1_l10_clip)`. Companion replaces them before the module runs the action, and any field can be switched to an **expression** (e.g. a layer `10 + $(local:n)`), except the dropdowns and checkboxes that show or hide other fields.
 
 - **Play / Cue (LOADBG) / Load** - channel, layer, clip (list from the server or typed), loop, start frame (SEEK), length, transition (CUT, MIX, PUSH, SLIDE, WIPE, VFADE, FADECUT, CUTFADE, STING), duration in frames, tween, direction. *Auto* (start when the current clip ends) is only offered on Cue - on PLAY the server ignores it and plays at once.
   - *Reset transforms first* sends `MIXER ch-layer CLEAR` before the clip: transforms (FILL, OPACITY...) survive `CLEAR`, so a lower third that was slid out stays off-screen otherwise.
@@ -40,7 +40,7 @@ Every field accepts variables, including **local button variables**: `$(local:na
 `server_version`, `connected`, `last_error`, `media_count`, `c<ch>_format` and per layer `c<ch>_l<layer>_clip`, `_state`, `_time`, `_remaining`, `_remaining_s`, `_duration`, `_progress`, `_loop`, `_bg` (e.g. `$(caspar:c1_l10_remaining)`); per output `c<ch>_o<number>_active`, `_time` (how long it runs), `_path` - for outputs 700 and 701 of the preset channel from the start, for others once they run.
 
 ### Presets
-Transport (incl. skip ±10 s), status displays (on air + countdown), mixer (incl. picture in picture in four corners and back to full screen), sources (fade to black, colour bed, other channels, web page and reload, SRT input), outputs (record and SRT stream start / stop with running time, snapshot), one Play and one Cue button per media file, show/hide per template, a custom HTML lower third show/hide, and two tested patterns: lower third show/hide and stinger hold/release.
+Transport (incl. skip ±10 s), status displays (on air + countdown), mixer (incl. picture in picture in four corners and back to full screen), sources (fade to black, colour bed, other channels, web page and reload, SRT input), outputs (record and SRT stream start / stop with running time, snapshot), Play and Cue for every media file and show/hide for every template (template presets: pick the clip or template in the preset list; the button keeps it in its local variable `clip` / `template`), a custom HTML lower third show/hide, and two tested patterns: lower third show/hide and stinger hold/release.
 
 ### Notes (measured on 2.5.1)
 - Durations in AMCP are **frames**; Companion waits are milliseconds.

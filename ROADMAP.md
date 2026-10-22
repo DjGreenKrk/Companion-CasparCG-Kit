@@ -7,9 +7,6 @@ benefit.
 
 | Item | Why | Notes |
 | --- | --- | --- |
-| Companion 5.0.x | Used in production; the module API (2.1) is accepted by 5.0.0 and newer, but only 5.1.0 was tested | Import the package, convert existing buttons, run a show page |
-| Module API 2.2 | Preset notes, presets that store action results to local variables, value feedback types | Needs Companion 5.1 - after production moves to it |
-| Preset templates | API 2.x `template` preset groups: one Play / Cue preset with the media list as values instead of one preset per file | |
 | CasparCG on Windows | All tests ran on a Linux server | Paths with `\`, fonts for HTML graphics |
 | CasparCG 2.4 and older | Tests target 2.5.1 | 2.4 has no VFADE / FADECUT / CUTFADE |
 | DeckLink / NDI inputs and outputs, interlaced modes | The test server has no video hardware or NDI runtime | The actions build the commands from the source / wiki; `NDI LIST` answers 403 without the runtime |

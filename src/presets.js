@@ -2,7 +2,7 @@ const { COLORS } = require('./feedbacks')
 
 const { RED, GREEN, AMBER, WHITE, BLACK } = COLORS
 const GREY = 0x333333
-const MAX_MEDIA_PRESETS = 300
+const MAX_MEDIA_PRESETS = 2000
 
 module.exports = function presetDefinitions(self) {
 	const ch = String(self.config.preset_channel || 1)
@@ -275,76 +275,109 @@ module.exports = function presetDefinitions(self) {
 		),
 	)
 
-	// --- one button per media file / template
-	const media = self.media.slice(0, MAX_MEDIA_PRESETS)
-	for (const m of media) {
-		add(
-			btn(
-				`Play on ${at}`,
-				`Play ${m.name}`,
-				short(m.name),
-				[[a('PLAY', { clip_dd: m.name })]],
-				[
-					fb('layer_clip', { clip_dd: m.name, where: 'fg' }, { bgcolor: RED }),
-					fb('layer_clip', { clip_dd: m.name, where: 'bg' }, { bgcolor: AMBER, color: BLACK }),
-				],
-			),
-		)
+	// --- one template preset per kind (module API 2.2): Companion lists one preset per media file / template,
+	// each button gets the name in its local variable, so a renamed list never leaves stale buttons behind
+	const templates = []
+	const template = (category, presetId, variableName, values, preset) => {
+		if (!values.length) return // before the first CLS / TLS: no group, so no unreferenced preset either
+		presets[presetId] = {
+			category: null,
+			...preset,
+			localVariables: [{ variableType: 'simple', variableName, startupValue: values[0] }],
+		}
+		templates.push({ category, presetId, variableName, values })
 	}
-	for (const m of media) {
-		add(
-			btn(
-				`Cue on ${at}`,
-				`Cue ${m.name}`,
-				`CUE\\n${short(m.name)}`,
-				[[a('LOADBG', { clip_dd: m.name })]],
-				[
-					fb('layer_clip', { clip_dd: m.name, where: 'bg' }, { bgcolor: AMBER, color: BLACK }),
-					fb('layer_clip', { clip_dd: m.name, where: 'fg' }, { bgcolor: RED }),
-				],
-			),
-		)
-	}
+	const clipVar = '$(local:clip)'
+	const media = self.media.slice(0, MAX_MEDIA_PRESETS).map((m) => m.name)
+	template(
+		`Play on ${at}`,
+		'play_clip',
+		'clip',
+		media,
+		btn(
+			null,
+			'Play clip',
+			clipVar,
+			[[a('PLAY', { clip_dd: '', clip: clipVar })]],
+			[
+				fb('layer_clip', { clip_dd: '', clip: clipVar, where: 'fg' }, { bgcolor: RED }),
+				fb('layer_clip', { clip_dd: '', clip: clipVar, where: 'bg' }, { bgcolor: AMBER, color: BLACK }),
+			],
+		),
+	)
+	template(
+		`Cue on ${at}`,
+		'cue_clip',
+		'clip',
+		media,
+		btn(
+			null,
+			'Cue clip',
+			`CUE\\n${clipVar}`,
+			[[a('LOADBG', { clip_dd: '', clip: clipVar })]],
+			[
+				fb('layer_clip', { clip_dd: '', clip: clipVar, where: 'bg' }, { bgcolor: AMBER, color: BLACK }),
+				fb('layer_clip', { clip_dd: '', clip: clipVar, where: 'fg' }, { bgcolor: RED }),
+			],
+		),
+	)
 	const cgAt = `${ch}-${cgLayer}`
-	for (const t of self.templates) {
-		add(
-			btn(
-				`Templates on ${cgAt}`,
-				`Template ${t} show / hide`,
-				short(t),
-				[
-					[a('CG ADD', { layer: cgLayer, template_dd: t, playonload: true })],
-					[a('CG STOP', { layer: cgLayer }), a('CLEAR', { layer: cgLayer }, 1000)],
-				],
-				[
-					{
-						feedbackId: 'layer_clip',
-						options: { channel: ch, layer: cgLayer, clip_dd: t, where: 'fg' },
-						style: { bgcolor: RED },
-					},
-				],
-			),
-		)
-	}
-	return withStructure(presets)
+	const tplVar = '$(local:template)'
+	template(
+		`Templates on ${cgAt}`,
+		'template_show_hide',
+		'template',
+		self.templates,
+		btn(
+			null,
+			'Template show / hide',
+			tplVar,
+			[
+				[a('CG ADD', { layer: cgLayer, template_dd: '', template: tplVar, playonload: true })],
+				[a('CG STOP', { layer: cgLayer }), a('CLEAR', { layer: cgLayer }, 1000)],
+			],
+			[
+				{
+					feedbackId: 'layer_clip',
+					options: { channel: ch, layer: cgLayer, clip_dd: '', clip: tplVar, where: 'fg' },
+					style: { bgcolor: RED },
+				},
+			],
+		),
+	)
+	return withStructure(presets, templates)
 }
 
 /**
  * Module API 2.x: presets come with a structure of sections instead of a category on each preset.
  * Sections keep the order in which their first preset was added.
  */
-function withStructure(all) {
+function withStructure(all, templates = []) {
 	const sections = new Map()
 	const presets = {}
+	const slug = (name) => name.toLowerCase().replace(/[^a-z0-9]+/g, '_')
 	for (const [id, { category, ...preset }] of Object.entries(all)) {
+		presets[id] = preset
+		if (category === null) continue // a template, listed by its group below
 		if (!sections.has(category)) sections.set(category, [])
 		sections.get(category).push(id)
-		presets[id] = preset
 	}
-	const structure = [...sections].map(([name, ids], i) => ({
-		id: `s${i}_${name.toLowerCase().replace(/[^a-z0-9]+/g, '_')}`,
-		name,
-		definitions: ids,
-	}))
+	const structure = [...sections].map(([name, ids], i) => ({ id: `s${i}_${slug(name)}`, name, definitions: ids }))
+	for (const t of templates) {
+		structure.push({
+			id: `t_${t.presetId}`,
+			name: t.category,
+			definitions: [
+				{
+					id: t.presetId,
+					type: 'template',
+					name: t.category,
+					presetId: t.presetId,
+					templateVariableName: t.variableName,
+					templateValues: t.values.map((v) => ({ name: v, value: v })),
+				},
+			],
+		})
+	}
 	return { structure, presets }
 }

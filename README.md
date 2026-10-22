@@ -2,7 +2,7 @@
 
 ### GreenCrew module for Bitfocus Companion and AI skills for CasparCG playout
 
-[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE) [![CI](https://github.com/DjGreenKrk/Companion-CasparCG-Kit/actions/workflows/ci.yml/badge.svg)](https://github.com/DjGreenKrk/Companion-CasparCG-Kit/actions/workflows/ci.yml) [![Companion module checks](https://github.com/DjGreenKrk/Companion-CasparCG-Kit/actions/workflows/companion-checks.yml/badge.svg)](https://github.com/DjGreenKrk/Companion-CasparCG-Kit/actions/workflows/companion-checks.yml) [![Latest release](https://img.shields.io/github/v/release/DjGreenKrk/Companion-CasparCG-Kit?include_prereleases&label=release)](https://github.com/DjGreenKrk/Companion-CasparCG-Kit/releases) [![Release date](https://img.shields.io/github/release-date-pre/DjGreenKrk/Companion-CasparCG-Kit?label=released)](https://github.com/DjGreenKrk/Companion-CasparCG-Kit/releases) [![Last commit](https://img.shields.io/github/last-commit/DjGreenKrk/Companion-CasparCG-Kit)](https://github.com/DjGreenKrk/Companion-CasparCG-Kit/commits) [![Status: beta](https://img.shields.io/badge/status-beta-orange.svg)](ROADMAP.md) [![Tested on Companion 5.1.0](https://img.shields.io/badge/tested%20on-Companion%205.1.0-2ea44f.svg)](#known-limitations) [![Tested on CasparCG 2.5.1](https://img.shields.io/badge/tested%20on-CasparCG%202.5.1-2ea44f.svg)](#known-limitations)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE) [![CI](https://github.com/DjGreenKrk/Companion-CasparCG-Kit/actions/workflows/ci.yml/badge.svg)](https://github.com/DjGreenKrk/Companion-CasparCG-Kit/actions/workflows/ci.yml) [![Companion module checks](https://github.com/DjGreenKrk/Companion-CasparCG-Kit/actions/workflows/companion-checks.yml/badge.svg)](https://github.com/DjGreenKrk/Companion-CasparCG-Kit/actions/workflows/companion-checks.yml) [![Latest release](https://img.shields.io/github/v/release/DjGreenKrk/Companion-CasparCG-Kit?include_prereleases&label=release)](https://github.com/DjGreenKrk/Companion-CasparCG-Kit/releases) [![Release date](https://img.shields.io/github/release-date-pre/DjGreenKrk/Companion-CasparCG-Kit?label=released)](https://github.com/DjGreenKrk/Companion-CasparCG-Kit/releases) [![Last commit](https://img.shields.io/github/last-commit/DjGreenKrk/Companion-CasparCG-Kit)](https://github.com/DjGreenKrk/Companion-CasparCG-Kit/commits) [![Status: beta](https://img.shields.io/badge/status-beta-orange.svg)](ROADMAP.md) [![Tested on Companion 5.1.1](https://img.shields.io/badge/tested%20on-Companion%205.1.1-2ea44f.svg)](#known-limitations) [![Tested on CasparCG 2.5.1](https://img.shields.io/badge/tested%20on-CasparCG%202.5.1-2ea44f.svg)](#known-limitations)
 
 **Companion CasparCG Kit** is a Bitfocus Companion module that controls a CasparCG playout
 server, together with AI skills that write the buttons and the HTML graphics for it. Every
@@ -10,8 +10,8 @@ action has its own fields (channel, layer, clip, transition, template data) inst
 line, every field takes Companion variables, and the buttons show what is on air. Made by
 GreenCrew, part of the GreenCrew Tools family.
 
-**Tested on Companion 5.1.0 with CasparCG Server 2.5.1** (Linux). Needs **Companion 5.0 or newer** (module API 2.1;
-Companion 5.0.x accepts it but has not been tested with it yet). For Companion 4.x use release 3.0.0-beta.3.
+**Tested on Companion 5.1.1 with CasparCG Server 2.5.1** (Linux). Needs **Companion 5.1 or newer** (module API 2.2,
+Node.js 26). For Companion 4.x or 5.0 use release 3.0.0-beta.3 (module API 1.14).
 
 | Part | Version | What it does |
 | --- | --- | --- |
@@ -57,9 +57,8 @@ Claude Code can install the skills as plugins straight from this repository:
    **CasparCG: Server (GreenCrew)**). Existing buttons are converted on the first start.
 3. Enter the server IP. The CasparCG media scanner must run for the clip and template lists.
 
-Tested with Companion 5.1.0 and CasparCG Server 2.5.1 on Linux. The module uses module API 2.1, which
-Companion 5.0.0 and newer accept (5.0.x not tested yet, see [ROADMAP.md](ROADMAP.md)); Companion 4.x needs
-release 3.0.0-beta.3 (module API 1.14).
+Tested with Companion 5.1.1 and CasparCG Server 2.5.1 on Linux. The module uses module API 2.2 on the Node.js 26
+runtime, which needs Companion 5.1 or newer; for Companion 4.x or 5.0 use release 3.0.0-beta.3 (module API 1.14).
 
 What it adds to the official module:
 
@@ -67,13 +66,14 @@ What it adds to the official module:
   including VFADE / FADECUT / CUTFADE / STING, tween and direction lists, mixer in percent,
   CG with fields, pause toggle, clear with transform reset. Input is checked before sending.
 - **Variables and expressions in every field**, including local button variables `$(local:name)`;
-  Companion resolves them (module API 2.1), and any field can be switched to an expression. The official
+  Companion resolves them (module API 2.2), and any field can be switched to an expression. The official
   2.1.2 resolves variables only in the raw command, sends local variables as `$NA`, and on Companion 5.1 loses
   expression mode.
 - **Live state** from `INFO <channel>` polling: tally (on air / cued), layer state, "ending soon",
   connection and command errors as feedbacks; per-layer variables such as
   `$(caspar:c1_l10_remaining)`.
-- **Presets** generated from the server's media and template lists, plus tested show/hide patterns.
+- **Presets** generated from the server's media and template lists (one template preset per kind - Companion lists a
+  button per clip / template), plus tested show/hide patterns.
 - **Templates**: data as fields (`name="$(local:name)"`), JSON, XML or a JS object passed as
   `update({...})`; quotes and backslashes in variable values reach the template.
 - **Custom HTML graphics**: an own lower third as HTML + CSS typed in the action, without a
@@ -104,7 +104,7 @@ Each skill folder is also a Claude Code plugin (`.claude-plugin/plugin.json`) an
 
 ## Known limitations
 
-Everything below was measured, mostly on CasparCG Server 2.5.1 with Companion 5.1.0. Each limit is marked with
+Everything below was measured, mostly on CasparCG Server 2.5.1 with Companion 5.1.0 / 5.1.1. Each limit is marked with
 where it comes from, because only some of them apply to your setup:
 
 - **Test machine**: our test server, not CasparCG. It probably does not apply to a playout PC with a GPU.
@@ -120,7 +120,7 @@ The tests ran on a Linux container with 4 vCPU, 4 GB RAM and no GPU (software re
 | Heavy channels do not keep real time | 4 HTML graphics at once on a 1080p50 channel; 1080p ProRes 4444 plus a recording reached ~54 % of real time |
 | ProRes recording is too slow | `prores_ks` encoded ~5 fps of 1080p (H.264 `veryfast` keeps up) |
 | Very large stills stall the server | an 8000×8000 PNG made the server and the container unresponsive for ~15 min |
-| Not tested at all | DeckLink and NDI inputs / outputs, interlaced output, Windows, Companion 5.0.5 |
+| Not tested at all | DeckLink and NDI inputs / outputs, interlaced output, Windows |
 
 ### CasparCG Server 2.5.1
 
@@ -173,7 +173,7 @@ These are server behaviours. The module works around the ones marked ✔; the re
 | Limit | Why / plan |
 | --- | --- |
 | State comes from `INFO` polling (default every 250 ms): tally, times and the skip position can be up to one interval old; "output is running" goes off ~1.5 s after a stop | OSC would be per frame, but 2.5.1 sends no output state over OSC ([ROADMAP](ROADMAP.md)) |
-| Module API 2.1 (`@companion-module/base` 2.1.3): needs Companion 5.0 or newer; 2.2 features (preset notes, storing action results from presets) need Companion 5.1 | Stay on 2.1 while production runs Companion 5.0.x |
+| Module API 2.2 (`@companion-module/base` 2.2.1, Node.js 26): needs Companion 5.1 or newer | Companion 4.x / 5.0: release 3.0.0-beta.3 |
 | Fields that show or hide other fields (transition, source, output type...) cannot be expressions | Required by module API 2.x for visibility rules |
 | Ranges set by the module: opacity 0-100 %, volume 0-400 %, brightness / saturation / contrast 0-500 %, transitions and animations at most 15000 frames | Safety limits, not server limits; existing buttons beyond them stop with an error in the log |
 | NDI and DeckLink actions build the documented commands but were not tested with a source or card | Needs hardware |

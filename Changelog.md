@@ -1,14 +1,16 @@
 # Companion CasparCG Kit 3.1.0-beta.1
 
-Moved to Companion's module API 2.1 (`@companion-module/base` 2.1.3). Needs Companion 5.0 or newer; tested on Companion 5.1.0 with CasparCG Server 2.5.1. For Companion 4.x keep 3.0.0-beta.3.
+Moved to Companion's newest module API 2.2 (`@companion-module/base` 2.2.1) on the Node.js 26 runtime. Needs Companion 5.1 or newer; tested on Companion 5.1.1 with CasparCG Server 2.5.1. For Companion 4.x or 5.0 keep 3.0.0-beta.3.
 
 * [FEATURE] Fields can be expressions again (Companion 5.1 reset expression mode for modules on API 1.x), e.g. a layer `10 + $(local:n)`; the dropdowns and checkboxes that show or hide other fields stay plain values
 * [CHANGE] Companion resolves variables - local button variables included - before the module runs an action (API 2.x)
 * [CHANGE] Presets come in sections (API 2.x structure); field visibility uses Companion expressions
+* [FEATURE] Play, Cue and template show/hide presets are template presets: one definition, Companion lists a button for every clip / template, each keeps its name in a local variable
 * [BUGFIX] Buttons made before an option existed get its default once: API 2.x skips an action whose dropdown has no value (seen with CG ADD "pass as" on a 3.0 button)
 * [CHANGE] Upgrade scripts read and write options as `{ value, isExpression }` and leave fields that are expressions alone
 * [CHANGE] Build with @companion-module/tools 3 (package `.tgz`), entry `main.mjs` exports the class and `UpgradeScripts`
 * [FEATURE] Skill **casparcg-amcp-button-builder 2.2.1**: module 3.1 notes
+* [CHANGE] Tests build all definitions (visibility rules, preset structure, option keys)
 
 # Companion CasparCG Kit 3.0.0-beta.3
 
