@@ -282,6 +282,251 @@ function swap(o) {
 	return out
 }
 
+// ------------------------------------------------------------------ mixer: geometry, blend, keyer
+
+/** Geometry commands with their values in percent (CROP / CLIP / ANCHOR) or degrees (ROTATION). */
+const GEOMETRY = {
+	CROP: ['crop_l', 'crop_t', 'crop_r', 'crop_b'],
+	CLIP: ['clip_x', 'clip_y', 'clip_w', 'clip_h'],
+	ANCHOR: ['anchor_x', 'anchor_y'],
+	ROTATION: ['rotation'],
+}
+
+function mixerGeometry(o) {
+	const prop = str(o.property).toUpperCase()
+	const keys = GEOMETRY[prop]
+	if (!keys) throw new Error(`Unknown mixer property "${prop}"`)
+	const v = keys.map((k) => num(o[k], `${prop} ${k.split('_')[1]}`))
+	const values = prop === 'ROTATION' ? v.map(fmt) : v.map((x) => fmt(x / 100))
+	return `MIXER ${address(o.channel, o.layer, { layerRequired: true })} ${prop} ${values.join(' ')}${mixerTail(o)}`
+}
+
+// tested on 2.5.1: an unknown mode is accepted silently, so the list is checked here
+const BLEND_MODES = [
+	'normal', 'lighten', 'darken', 'multiply', 'average', 'add', 'subtract', 'difference', 'negation', 'exclusion',
+	'screen', 'overlay', 'soft_light', 'hard_light', 'color_dodge', 'color_burn', 'linear_dodge', 'linear_burn',
+	'linear_light', 'vivid_light', 'pin_light', 'hard_mix', 'reflect', 'glow', 'phoenix', 'contrast', 'saturation',
+	'color', 'luminosity',
+] // prettier-ignore
+
+function mixerBlend(o) {
+	const mode = str(o.blend).toLowerCase()
+	if (!BLEND_MODES.includes(mode)) throw new Error(`Unknown blend mode "${mode}" (the server would ignore it)`)
+	return `MIXER ${address(o.channel, o.layer, { layerRequired: true })} BLEND ${mode}`
+}
+
+function mixerKeyer(o) {
+	return `MIXER ${address(o.channel, o.layer, { layerRequired: true })} KEYER ${truthy(o.keyer) ? 1 : 0}`
+}
+
+// ------------------------------------------------------------------ other sources for PLAY / LOADBG
+
+// tested on 2.5.1: the colour producer knows only these names; others answer 404
+const COLOR_NAMES = ['EMPTY', 'BLACK', 'WHITE', 'RED', 'GREEN', 'BLUE', 'ORANGE', 'YELLOW', 'BROWN', 'GRAY', 'TEAL']
+
+/** Companion colour (number, "#rrggbb" or "rgb(a)(...)") + opacity in percent -> "#AARRGGBB". */
+function hexColor(value, opacity = 100) {
+	let rgb
+	if (typeof value === 'number') rgb = value
+	else {
+		const s = str(value)
+		let m
+		if ((m = /^#?([0-9a-f]{6})$/i.exec(s))) rgb = parseInt(m[1], 16)
+		else if ((m = /^rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/i.exec(s))) rgb = (+m[1] << 16) | (+m[2] << 8) | +m[3]
+		else if (/^\d+$/.test(s)) rgb = parseInt(s, 10)
+		else throw new Error(`"${s}" is not a colour`)
+	}
+	const a = Math.round((Math.min(100, Math.max(0, num(opacity, 'Opacity (%)'))) / 100) * 255)
+	return (
+		'#' +
+		[a, (rgb >> 16) & 255, (rgb >> 8) & 255, rgb & 255]
+			.map((x) => x.toString(16).padStart(2, '0'))
+			.join('')
+			.toUpperCase()
+	)
+}
+
+/** A colour or a gradient typed as text: names or #RRGGBB / #AARRGGBB separated by spaces. */
+function colorList(text) {
+	const parts = str(text)
+		.split(/[\s,]+/)
+		.filter(Boolean)
+	if (!parts.length) throw new Error('No colour given')
+	for (const p of parts) {
+		if (!/^#([0-9a-f]{6}|[0-9a-f]{8})$/i.test(p) && !COLOR_NAMES.includes(p.toUpperCase()))
+			throw new Error(`"${p}" is not a colour the server knows: use #RRGGBB, #AARRGGBB or ${COLOR_NAMES.join(', ')}`)
+	}
+	return parts.map((p) => p.toUpperCase()).join(' ')
+}
+
+const SOURCES = ['color', 'html', 'route', 'stream', 'ndi', 'decklink']
+
+/** The producer part of PLAY / LOADBG for a source that is not a media file. */
+function sourceSpec(o) {
+	switch (str(o.source)) {
+		case 'color':
+			return str(o.color_text) ? colorList(o.color_text) : hexColor(o.color, o.opacity ?? 100)
+		case 'html': {
+			const url = str(o.url)
+			if (!url) throw new Error('Web page needs an address')
+			return `[HTML] ${quote(url)}`
+		}
+		case 'route': {
+			const ch = int(o.route_channel, 'Route: source channel', { min: 1 })
+			const l = int(o.route_layer, 'Route: source layer', { optional: true })
+			return `route://${l === null ? ch : `${ch}-${l}`}`
+		}
+		case 'stream': {
+			const url = str(o.url)
+			if (!/^[a-z][a-z0-9+.-]*:\/\/./i.test(url))
+				throw new Error(`"${url}" is not a stream address (srt://, rtmp://, http://...)`)
+			// quoted as it is: backslashes are not folder separators in a URL
+			return '"' + url.replace(/"/g, '\\"') + '"'
+		}
+		case 'ndi': {
+			const name = str(o.ndi_name)
+			if (!name) throw new Error('NDI needs a source name (PC NAME/Source)')
+			return '"' + ('ndi://' + name.replace(/^ndi:\/\//i, '')).replace(/"/g, '\\"') + '"'
+		}
+		case 'decklink': {
+			const dev = int(o.device, 'DeckLink device', { min: 1 })
+			return `DECKLINK ${dev}` + (str(o.format) ? ` FORMAT ${str(o.format)}` : '')
+		}
+		default:
+			throw new Error(`Unknown source "${o.source}"`)
+	}
+}
+
+function playSource(o) {
+	const verb = str(o.verb).toUpperCase() || 'PLAY'
+	if (!['PLAY', 'LOADBG'].includes(verb)) throw new Error(`Unknown command "${verb}"`)
+	const parts = [verb, address(o.channel, o.layer, { layerRequired: true }), sourceSpec(o)]
+	if (verb === 'LOADBG' && truthy(o.auto)) parts.push('AUTO')
+	const t = transition({ ...o, transition: o.transition === 'STING' ? 'CUT' : o.transition })
+	if (t) parts.push(t)
+	return parts.join(' ')
+}
+
+/** Scrolling image (credits): PLAY <image> SPEED n | DURATION s. */
+function scrollPlay(o) {
+	const clip = str(o.clip) || str(o.clip_dd)
+	if (!clip) throw new Error('Scroll needs an image')
+	const parts = ['PLAY', address(o.channel, o.layer, { layerRequired: true }), quote(clip)]
+	if (str(o.mode) === 'duration') {
+		const d = num(o.value, 'Duration (s)')
+		if (d <= 0) throw new Error('Duration must be more than 0 s')
+		parts.push(`DURATION ${fmt(d)}`)
+	} else {
+		const s = num(o.value, 'Speed (px per frame)')
+		if (s === 0) throw new Error('Speed 0 does not scroll - the image would be squeezed into the frame')
+		parts.push(`SPEED ${fmt(s)}`)
+	}
+	const blur = int(o.blur, 'Motion blur (px)', { optional: true })
+	if (blur) parts.push(`BLUR ${blur}`)
+	if (truthy(o.premultiply)) parts.push('PREMULTIPLY')
+	const t = transition({ ...o, transition: o.transition === 'STING' ? 'CUT' : o.transition })
+	if (t) parts.push(t)
+	return parts.join(' ')
+}
+
+function scrollSpeed(o) {
+	const s = num(o.value, 'Speed (px per frame)')
+	let out = `CALL ${address(o.channel, o.layer, { layerRequired: true })} SPEED ${fmt(s)}`
+	const dur = int(o.duration, 'Duration (frames)', { optional: true }) ?? 0
+	if (dur > 0) out += ` ${dur} ${tween(o.tween)}`
+	return out
+}
+
+/** JavaScript on a web page layer, or a reload. */
+function pageCall(o) {
+	const addr = address(o.channel, o.layer, { layerRequired: true })
+	if (truthy(o.reload)) return `CALL ${addr} RELOAD`
+	const js = str(o.js).replace(/\s*\n\s*/g, ' ')
+	if (!js) throw new Error('No JavaScript given')
+	return `CALL ${addr} ${amcpString(js)}`
+}
+
+/** Skip forward / back by seconds, turned into channel frames (CALL ... SEEK REL counts channel frames, 2.5.1). */
+function seekRelative(o, framerate) {
+	const sec = num(o.seconds, 'Seconds')
+	if (!framerate) throw new Error('the channel frame rate is not known yet (not connected / not polled)')
+	return `CALL ${address(o.channel, o.layer, { layerRequired: true })} SEEK REL ${Math.round(sec * framerate)}`
+}
+
+// ------------------------------------------------------------------ outputs (consumers)
+
+// tested on 2.5.1 (ffmpeg consumer): only the -name:stream form of options is taken
+const RECORD_PRESETS = {
+	h264: {
+		ext: 'mp4',
+		args: '-codec:v libx264 -preset:v veryfast -crf:v 18 -filter:v format=yuv420p -codec:a aac -b:a 192k',
+	},
+	prores: { ext: 'mov', args: '-codec:v prores_ks -profile:v 2 -filter:v format=yuv422p10le -codec:a pcm_s16le' },
+}
+const STREAM_PRESETS = {
+	srt: '-format mpegts -codec:v libx264 -preset:v veryfast -tune:v zerolatency -b:v 8000k -maxrate:v 8000k -bufsize:v 8000k -g:v 50 -filter:v format=yuv420p -codec:a aac -b:a 192k',
+	rtmp: '-format flv -codec:v libx264 -preset:v veryfast -tune:v zerolatency -b:v 6000k -maxrate:v 6000k -bufsize:v 12000k -g:v 50 -filter:v format=yuv420p -codec:a aac -b:a 160k',
+}
+
+/** {date} {time} {datetime} in a file name, from the given Date (local time). */
+function fillDate(s, now = new Date()) {
+	const p = (n) => String(n).padStart(2, '0')
+	const date = `${now.getFullYear()}${p(now.getMonth() + 1)}${p(now.getDate())}`
+	const time = `${p(now.getHours())}${p(now.getMinutes())}${p(now.getSeconds())}`
+	return s
+		.replace(/\{date\}/g, date)
+		.replace(/\{time\}/g, time)
+		.replace(/\{datetime\}/g, `${date}_${time}`)
+}
+
+function outputIndex(o) {
+	return `${int(o.channel, 'Channel', { min: 1 })}-${int(o.index, 'Output number', { min: 1 })}`
+}
+
+function outputAdd(o, now) {
+	const at = outputIndex(o)
+	const kind = str(o.kind)
+	const extra = str(o.args)
+	if (kind === 'file') {
+		const preset = RECORD_PRESETS[str(o.preset)]
+		let path = fillDate(str(o.path), now).replace(/\\/g, '/')
+		if (!path) throw new Error('Recording needs a file name')
+		if (preset && !/\.[a-z0-9]{2,4}$/i.test(path)) path += '.' + preset.ext
+		const args = str(o.preset) === 'custom' ? extra : [preset?.args, extra].filter(Boolean).join(' ')
+		return `ADD ${at} FILE ${quote(path)}${args ? ' ' + args : ''}`
+	}
+	if (kind === 'stream') {
+		const url = str(o.url)
+		if (!/^[a-z][a-z0-9+.-]*:\/\/./i.test(url)) throw new Error(`"${url}" is not a stream address (srt://, rtmp://...)`)
+		const preset = STREAM_PRESETS[str(o.stream_preset)]
+		const args = str(o.stream_preset) === 'custom' ? extra : [preset, extra].filter(Boolean).join(' ')
+		return `ADD ${at} STREAM ${'"' + url.replace(/"/g, '\\"') + '"'}${args ? ' ' + args : ''}`
+	}
+	if (kind === 'ndi') {
+		const name = str(o.ndi_name)
+		if (!name) throw new Error('NDI output needs a name')
+		return `ADD ${at} NDI NAME ${quote(name)}`
+	}
+	throw new Error(`Unknown output "${kind}"`)
+}
+
+function outputRemove(o) {
+	return `REMOVE ${outputIndex(o)}`
+}
+
+/**
+ * Picture of the channel as PNG in the media folder. On 2.5.1 a snapshot holds the picture of the previous one,
+ * so it is taken twice; the second one (500 ms later) overwrites the file with the current picture.
+ */
+function snapshot(o, now) {
+	const ch = int(o.channel, 'Channel', { min: 1 })
+	const name = fillDate(str(o.name) || 'snapshot_{datetime}', now)
+		.replace(/\\/g, '/')
+		.replace(/\.png$/i, '')
+	const cmd = `ADD ${ch} IMAGE ${quote(name)}`
+	return [{ cmd }, { cmd, after: 500, key: `snapshot-${ch}` }]
+}
+
 module.exports = {
 	TWEENS,
 	TRANSITIONS,
@@ -307,4 +552,25 @@ module.exports = {
 	objectCall,
 	cg,
 	swap,
+	GEOMETRY,
+	BLEND_MODES,
+	COLOR_NAMES,
+	SOURCES,
+	RECORD_PRESETS,
+	STREAM_PRESETS,
+	mixerGeometry,
+	mixerBlend,
+	mixerKeyer,
+	hexColor,
+	colorList,
+	sourceSpec,
+	playSource,
+	scrollPlay,
+	scrollSpeed,
+	pageCall,
+	seekRelative,
+	fillDate,
+	outputAdd,
+	outputRemove,
+	snapshot,
 }

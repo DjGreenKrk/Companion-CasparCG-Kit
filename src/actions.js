@@ -168,6 +168,52 @@ module.exports = function actionDefinitions(self) {
 			options: [F.channel(), F.number('value', 'Volume (%)', '100'), ...F.mixerTailFields()],
 			callback: run((o) => B.masterVolume(o)),
 		},
+		MIXER_GEOMETRY: {
+			name: 'Mixer: crop / mask / rotation / pivot (CROP, CLIP, ROTATION, ANCHOR)',
+			description:
+				'CROP cuts the image edges (image coordinates), CLIP shows only a rectangle of the screen, ROTATION turns around the pivot (ANCHOR, default top-left corner).',
+			options: [
+				F.channel(),
+				F.layer(),
+				{
+					type: 'dropdown',
+					id: 'property',
+					label: 'Property',
+					default: 'CROP',
+					choices: [
+						{ id: 'CROP', label: 'Crop edges (CROP)' },
+						{ id: 'CLIP', label: 'Show only a screen rectangle (CLIP)' },
+						{ id: 'ROTATION', label: 'Rotation (ROTATION)' },
+						{ id: 'ANCHOR', label: 'Pivot point (ANCHOR)' },
+					],
+				},
+				...geometryFields(),
+				...F.mixerTailFields(),
+			],
+			callback: run((o) => B.mixerGeometry(o)),
+		},
+		MIXER_BLEND: {
+			name: 'Mixer: blend mode (BLEND)',
+			options: [
+				F.channel(),
+				F.layer(),
+				{
+					type: 'dropdown',
+					id: 'blend',
+					label: 'Blend mode',
+					default: 'normal',
+					choices: B.BLEND_MODES.map((m) => ({ id: m, label: m })),
+				},
+			],
+			callback: run((o) => B.mixerBlend(o)),
+		},
+		MIXER_KEYER: {
+			name: 'Mixer: use layer as key for the layer above (KEYER)',
+			description:
+				'The layer is hidden and the layer above shows only where this one is bright (red channel, not alpha - tested on 2.5.1).',
+			options: [F.channel(), F.layer(), YES('keyer', 'Keyer on', true)],
+			callback: run((o) => B.mixerKeyer(o)),
+		},
 		MIXER_CLEAR: {
 			name: 'Mixer: reset transforms (MIXER CLEAR)',
 			options: layerOnly(),
@@ -256,6 +302,191 @@ module.exports = function actionDefinitions(self) {
 			callback: run((o) => H.hide(o)),
 		},
 
+		PLAY_SOURCE: {
+			name: 'Play colour, web page, other channel or live stream',
+			description:
+				'Sources that are not media files: colour / gradient, a web page ([HTML]), another channel or layer (route://), SRT / RTMP / HTTP stream, NDI, DeckLink input.',
+			options: [
+				F.channel(),
+				F.layer(),
+				{
+					type: 'dropdown',
+					id: 'verb',
+					label: 'Command',
+					default: 'PLAY',
+					choices: [
+						{ id: 'PLAY', label: 'Play now (PLAY)' },
+						{ id: 'LOADBG', label: 'Cue in background (LOADBG)' },
+					],
+				},
+				YES('auto', 'Auto: start when the current clip ends (AUTO)', false),
+				{
+					type: 'dropdown',
+					id: 'source',
+					label: 'Source',
+					default: 'color',
+					choices: [
+						{ id: 'color', label: 'Colour / gradient' },
+						{ id: 'html', label: 'Web page ([HTML])' },
+						{ id: 'route', label: 'Another channel / layer (route://)' },
+						{ id: 'stream', label: 'Live stream (srt://, rtmp://, http://)' },
+						{ id: 'ndi', label: 'NDI source (needs NDI on the server)' },
+						{ id: 'decklink', label: 'DeckLink input' },
+					],
+				},
+				{
+					type: 'colorpicker',
+					id: 'color',
+					label: 'Colour',
+					default: 0x000000,
+					isVisible: (o) => o.source === 'color',
+				},
+				F.number('opacity', 'Opacity (%)', '100', { isVisible: (o) => o.source === 'color' }),
+				F.text('color_text', 'Or colours as text (overrides the picker)', '', {
+					isVisible: (o) => o.source === 'color',
+					tooltip:
+						'#RRGGBB, #AARRGGBB or BLACK, WHITE, RED, GREEN, BLUE, ORANGE, YELLOW, BROWN, GRAY, TEAL, EMPTY. Several colours = horizontal gradient: #FF0000 #0000FF',
+				}),
+				F.text('url', 'Address', '', {
+					isVisible: (o) => o.source === 'html' || o.source === 'stream',
+					tooltip:
+						'Web page: https://... or file:///... Stream: srt://host:port?mode=caller, rtmp://..., http://...m3u8',
+				}),
+				F.number('route_channel', 'Source channel', '1', { isVisible: (o) => o.source === 'route' }),
+				F.number('route_layer', 'Source layer (empty = whole channel)', '', { isVisible: (o) => o.source === 'route' }),
+				F.text('ndi_name', 'NDI source (PC NAME/Source)', '', { isVisible: (o) => o.source === 'ndi' }),
+				F.number('device', 'DeckLink device', '1', { isVisible: (o) => o.source === 'decklink' }),
+				F.text('format', 'Input format (optional, e.g. 1080i5000)', '', { isVisible: (o) => o.source === 'decklink' }),
+				...F.transitionFields(self, { sting: false }),
+			],
+			callback: run((o) => B.playSource(o)),
+		},
+		SCROLL_PLAY: {
+			name: 'Scroll an image (credits)',
+			description: 'A tall image scrolls up (negative speed: down). Width should match the channel.',
+			options: [
+				F.channel(),
+				F.layer(),
+				F.mediaField(self, { label: 'Image' }),
+				F.clipOverride('Or image name / variable'),
+				{
+					type: 'dropdown',
+					id: 'mode',
+					label: 'Scroll by',
+					default: 'speed',
+					choices: [
+						{ id: 'speed', label: 'Speed (pixels per frame)' },
+						{ id: 'duration', label: 'Total time (seconds)' },
+					],
+				},
+				F.number('value', 'Speed / seconds', '4', { tooltip: 'Interlaced channels: use even speeds' }),
+				F.number('blur', 'Motion blur (px, optional)', ''),
+				YES('premultiply', 'Image has straight alpha (PREMULTIPLY)'),
+				...F.transitionFields(self, { sting: false }),
+			],
+			callback: run((o) => B.scrollPlay(o)),
+		},
+		SCROLL_SPEED: {
+			name: 'Scroll: change speed (CALL SPEED)',
+			options: [
+				F.channel(),
+				F.layer(),
+				F.number('value', 'New speed (px per frame, 0 = stop)', '0'),
+				F.number('duration', 'Change over (frames)', '25'),
+				F.tweenField('tween', { isVisible: (o) => o.duration !== '0' && o.duration !== '' }),
+			],
+			callback: run((o) => B.scrollSpeed(o)),
+		},
+		PAGE_CALL: {
+			name: 'Web page: run JavaScript / reload',
+			description: 'For a layer playing a web page ([HTML]). The server answers OK even when the script fails.',
+			options: [
+				F.channel(),
+				F.layer(),
+				YES('reload', 'Reload the page instead (RELOAD)'),
+				F.text('js', 'JavaScript', '', { multiline: true, isVisible: (o) => !o.reload }),
+			],
+			callback: run((o) => B.pageCall(o)),
+		},
+		SEEK_REL: {
+			name: 'Skip forward / back (seconds)',
+			options: [F.channel(), F.layer(), F.number('seconds', 'Seconds (back: negative)', '10')],
+			callback: run((o) => B.seekRelative(o, self.framerateOf(o.channel))),
+		},
+
+		OUTPUT_ADD: {
+			name: 'Output: start recording / stream / NDI',
+			description:
+				'Starts an output of the whole channel under a number; stop it with "Output: stop" and the same number. A number already in use replaces that output.',
+			options: [
+				F.channel(),
+				F.number('index', 'Output number', '700', {
+					tooltip: 'Any free number, e.g. 700 for the recording, 701 for the stream',
+				}),
+				{
+					type: 'dropdown',
+					id: 'kind',
+					label: 'Output',
+					default: 'file',
+					choices: [
+						{ id: 'file', label: 'Record to a file' },
+						{ id: 'stream', label: 'Stream (SRT / RTMP)' },
+						{ id: 'ndi', label: 'NDI (needs NDI on the server)' },
+					],
+				},
+				F.text('path', 'File (in the media folder unless absolute)', 'recording_{datetime}', {
+					isVisible: (o) => o.kind === 'file',
+					tooltip: '{date}, {time} and {datetime} are replaced; the extension comes from the format when missing',
+				}),
+				{
+					type: 'dropdown',
+					id: 'preset',
+					label: 'Format',
+					default: 'h264',
+					isVisible: (o) => o.kind === 'file',
+					choices: [
+						{ id: 'h264', label: 'H.264 + AAC (.mp4)' },
+						{ id: 'prores', label: 'ProRes 422 + PCM (.mov) - needs a fast CPU' },
+						{ id: 'custom', label: 'Custom ffmpeg options' },
+					],
+				},
+				F.text('url', 'Address', 'srt://0.0.0.0:9000?mode=listener', {
+					isVisible: (o) => o.kind === 'stream',
+					tooltip:
+						'srt://0.0.0.0:9000?mode=listener (receivers connect to the server), srt://host:port, rtmp://server/app/key',
+				}),
+				{
+					type: 'dropdown',
+					id: 'stream_preset',
+					label: 'Format',
+					default: 'srt',
+					isVisible: (o) => o.kind === 'stream',
+					choices: [
+						{ id: 'srt', label: 'MPEG-TS, H.264 8 Mb/s (SRT)' },
+						{ id: 'rtmp', label: 'FLV, H.264 6 Mb/s (RTMP: YouTube, Facebook...)' },
+						{ id: 'custom', label: 'Custom ffmpeg options' },
+					],
+				},
+				F.text('args', 'Extra ffmpeg options (-name:stream form, e.g. -b:v 4000k)', '', {
+					isVisible: (o) => o.kind !== 'ndi',
+				}),
+				F.text('ndi_name', 'NDI name', 'CasparCG', { isVisible: (o) => o.kind === 'ndi' }),
+			],
+			callback: run((o) => B.outputAdd(o)),
+		},
+		OUTPUT_REMOVE: {
+			name: 'Output: stop (REMOVE)',
+			options: [F.channel(), F.number('index', 'Output number', '700')],
+			callback: run((o) => B.outputRemove(o)),
+		},
+		SNAPSHOT: {
+			name: 'Output: save a picture of the channel (PNG)',
+			description:
+				'Saved in the media folder. Taken twice 0.5 s apart (2.5.1 saves the previous picture the first time).',
+			options: [F.channel(), F.text('name', 'File name (no extension)', 'snapshot_{datetime}')],
+			callback: run((o) => B.snapshot(o)),
+		},
+
 		COMMAND: {
 			name: 'Manually specify AMCP command',
 			description: 'Raw AMCP line. Local and global variables are replaced, e.g. PLAY 1-10 "$(local:clip)".',
@@ -279,6 +510,27 @@ module.exports = function actionDefinitions(self) {
 		},
 	}
 	return actions
+}
+
+function geometryFields() {
+	const on = (p) => (o) => o.property === p
+	const n = (id, label, def, p, extra) => F.number(id, label, def, { width: 3, isVisible: on(p), ...extra })
+	return [
+		n('crop_l', 'Left edge (%)', '0', 'CROP'),
+		n('crop_t', 'Top edge (%)', '0', 'CROP'),
+		n('crop_r', 'Right edge (%)', '100', 'CROP'),
+		n('crop_b', 'Bottom edge (%)', '100', 'CROP'),
+		n('clip_x', 'X (% of width)', '0', 'CLIP'),
+		n('clip_y', 'Y (% of height)', '0', 'CLIP'),
+		n('clip_w', 'Width (%)', '100', 'CLIP'),
+		n('clip_h', 'Height (%)', '100', 'CLIP'),
+		n('rotation', 'Degrees (clockwise)', '0', 'ROTATION'),
+		n('anchor_x', 'X (% of the image)', '0', 'ANCHOR', {
+			tooltip:
+				'ANCHOR 50/50 alone moves the image up-left by half; pair it with FILL 50 50 to rotate around the centre',
+		}),
+		n('anchor_y', 'Y (% of the image)', '0', 'ANCHOR'),
+	]
 }
 
 function cgOptions() {

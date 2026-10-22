@@ -22,7 +22,13 @@ function mmss(sec, { up = true } = {}) {
 	return h ? `${h}:${String(m).padStart(2, '0')}:${r}` : `${String(m).padStart(2, '0')}:${r}`
 }
 
-function definitions(channels, layerKeys) {
+const OUTPUT_VARS = [
+	['active', 'active (yes / no)'],
+	['time', 'running for (mm:ss)'],
+	['path', 'file / address'],
+]
+
+function definitions(channels, layerKeys, outputKeys = []) {
 	const defs = [
 		{ variableId: 'server_version', name: 'Server version' },
 		{ variableId: 'connected', name: 'Connected (yes / no)' },
@@ -38,7 +44,24 @@ function definitions(channels, layerKeys) {
 			defs.push({ variableId: `c${c}_l${l}_${id}`, name: `Channel ${c} layer ${l}: ${label}` })
 		}
 	}
+	for (const key of outputKeys) {
+		const [c, n] = key.split('-')
+		for (const [id, label] of OUTPUT_VARS) {
+			defs.push({ variableId: `c${c}_o${n}_${id}`, name: `Channel ${c} output ${n}: ${label}` })
+		}
+	}
 	return defs
+}
+
+/** Variables of one output (consumer) added with an index, e.g. a recording on 1-700. */
+function outputValues(key, out) {
+	const [c, n] = key.split('-')
+	const p = `c${c}_o${n}_`
+	return {
+		[p + 'active']: out ? 'yes' : 'no',
+		[p + 'time']: out?.seconds !== null && out?.seconds !== undefined ? mmss(out.seconds, { up: false }) : '',
+		[p + 'path']: out?.path ?? '',
+	}
 }
 
 function layerValues(key, layer, state) {
@@ -60,4 +83,4 @@ function layerValues(key, layer, state) {
 	}
 }
 
-module.exports = { definitions, layerValues, mmss, LAYER_VARS }
+module.exports = { definitions, layerValues, outputValues, mmss, LAYER_VARS, OUTPUT_VARS }

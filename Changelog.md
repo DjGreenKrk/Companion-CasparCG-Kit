@@ -1,3 +1,17 @@
+# Companion CasparCG Kit 3.0.0-beta.2
+
+Features from the CasparCG documentation and source that the module did not cover yet, each checked on CasparCG Server 2.5.1.
+
+* [FEATURE] Mixer: crop, screen mask (CLIP), rotation and pivot (ANCHOR), blend modes, keyer - with duration, tween and defer
+* [FEATURE] Play colour (picker with opacity, names, gradients), web page, another channel / layer (route://), SRT / RTMP / HTTP stream, NDI source, DeckLink input - with transitions
+* [FEATURE] Scrolling image (credits) by speed or total time, speed change on air
+* [FEATURE] Web page layers: run JavaScript, reload
+* [FEATURE] Skip forward / back by seconds (`CALL SEEK REL`)
+* [FEATURE] Outputs: record (H.264, ProRes, own ffmpeg options, date in the file name), stream (SRT, RTMP), NDI, stop; PNG snapshot of the channel (taken twice because 2.5.1 saves the previous picture first)
+* [FEATURE] Feedback "Output is running" and variables per output (`c1_o700_time`, `_active`, `_path`) from `INFO`
+* [FEATURE] Presets: skip ±10 s, picture in picture corners, fade to black, colour bed, other channels, web page reload, SRT input, record / stream start-stop with running time, snapshot
+* [FEATURE] Skill **casparcg-amcp-button-builder 2.1.0**: producers, OSC, outputs and queries that the official documentation leaves out, measured on 2.5.1
+
 # Companion CasparCG Kit 3.0.0-beta.1
 
 First release under the GreenCrew name. Based on bitfocus/companion-module-casparcg-server 2.1.2. Tested with Companion 5.1.0 and CasparCG Server 2.5.1.

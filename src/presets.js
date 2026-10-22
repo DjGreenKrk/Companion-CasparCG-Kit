@@ -64,6 +64,8 @@ module.exports = function presetDefinitions(self) {
 	add(btn(T, 'Clear channel', `CLEAR\\nch ${ch}`, [[a('CLEAR', { layer: '' })]]))
 	add(btn(T, 'Clear all channels', 'CLEAR\\nALL', [[a('CLEAR_ALL')]]))
 	add(btn(T, 'Restart clip', `RESTART\\n${at}`, [[a('CALL_PARAM', { param: 'SEEK', value: '0' })]]))
+	add(btn(T, 'Back 10 s', `-10 s\\n${at}`, [[a('SEEK_REL', { seconds: '-10' })]]))
+	add(btn(T, 'Forward 10 s', `+10 s\\n${at}`, [[a('SEEK_REL', { seconds: '10' })]]))
 	add(
 		btn(
 			T,
@@ -130,6 +132,76 @@ module.exports = function presetDefinitions(self) {
 		]),
 	)
 	add(btn(M, 'Reset transforms', `MIXER\\nCLEAR\\n${at}`, [[a('MIXER_CLEAR')]]))
+	// picture in picture: a third of the screen with a 4 % margin, animated over 25 frames
+	const pip = { sx: '33', sy: '33', duration: '25', tween: 'easeoutsine' }
+	for (const [name, x, y] of [
+		['top left', '4', '4'],
+		['top right', '63', '4'],
+		['bottom left', '4', '63'],
+		['bottom right', '63', '63'],
+	]) {
+		add(btn(M, `Picture in picture ${name}`, `PIP\\n${name.toUpperCase()}`, [[a('MIXER_FILL', { ...pip, x, y })]]))
+	}
+	add(
+		btn(M, 'Back to full screen', `FULL\\nSCREEN\\n${at}`, [
+			[a('MIXER_FILL', { x: '0', y: '0', sx: '100', sy: '100', duration: '25', tween: 'easeoutsine' })],
+		]),
+	)
+
+	// --- other sources
+	const SRC = `Sources on ${at}`
+	add(
+		btn(SRC, 'Fade to black', `TO\\nBLACK\\n${at}`, [
+			[a('PLAY_SOURCE', { source: 'color', color_text: 'BLACK', transition: 'MIX', transition_duration: '25' })],
+		]),
+	)
+	add(
+		btn(SRC, 'Colour bed', `COLOUR\\n${at}`, [
+			[a('PLAY_SOURCE', { source: 'color', color: 0x003366, transition: 'MIX', transition_duration: '25' })],
+		]),
+	)
+	for (const c of self.channels.filter((c) => String(c.channel) !== ch)) {
+		add(
+			btn(SRC, `Channel ${c.channel} here`, `CH ${c.channel}\\n→ ${at}`, [
+				[a('PLAY_SOURCE', { source: 'route', route_channel: String(c.channel), route_layer: '' })],
+			]),
+		)
+	}
+	add(btn(SRC, 'Web page', `WEB\\nPAGE\\n${at}`, [[a('PLAY_SOURCE', { source: 'html', url: 'https://casparcg.com' })]]))
+	add(btn(SRC, 'Reload web page', `RELOAD\\n${at}`, [[a('PAGE_CALL', { reload: true })]]))
+	add(
+		btn(SRC, 'SRT input', `SRT IN\\n${at}`, [
+			[a('PLAY_SOURCE', { source: 'stream', url: 'srt://192.168.0.10:9000?mode=caller' })],
+		]),
+	)
+
+	// --- outputs of the preset channel
+	const O = `Outputs ch ${ch}`
+	const ov = (n, id) => v(`c${ch}_o${n}_${id}`)
+	const ofb = (n) => ({
+		feedbackId: 'output_active',
+		options: { channel: ch, index: String(n) },
+		style: { bgcolor: RED },
+	})
+	add(
+		btn(
+			O,
+			'Record start / stop',
+			`REC\\n${ov(700, 'time')}`,
+			[[a('OUTPUT_ADD', { index: '700', kind: 'file' })], [a('OUTPUT_REMOVE', { index: '700' })]],
+			[ofb(700)],
+		),
+	)
+	add(
+		btn(
+			O,
+			'SRT stream start / stop',
+			`SRT OUT\\n${ov(701, 'time')}`,
+			[[a('OUTPUT_ADD', { index: '701', kind: 'stream' })], [a('OUTPUT_REMOVE', { index: '701' })]],
+			[ofb(701)],
+		),
+	)
+	add(btn(O, 'Snapshot (PNG)', `SNAP\\nch ${ch}`, [[a('SNAPSHOT')]]))
 	add(btn(M, 'Master volume 100%', `MASTER\\n100%\\nch ${ch}`, [[a('MIXER_MASTERVOLUME', { value: '100' })]]))
 
 	// --- patterns verified on CasparCG 2.5.1

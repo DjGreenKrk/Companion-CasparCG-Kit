@@ -18,6 +18,9 @@ const CONFIG_DEFAULTS = {
 	log_commands: false,
 }
 
+// output numbers used by the record / stream presets
+const PRESET_OUTPUTS = [700, 701]
+
 const HINTS = {
 	400: 'the server did not understand the command - check the spelling',
 	401: 'that channel does not exist',
@@ -40,6 +43,7 @@ class CasparInstance extends InstanceBase {
 		this.state = {} // channel -> { format, framerate, layers }
 		this.paths = null
 		this.knownLayers = new Set()
+		this.knownOutputs = new Set()
 		this.values = {}
 		this.lastErrorAt = 0
 		this.chain = Promise.resolve()
@@ -56,6 +60,7 @@ class CasparInstance extends InstanceBase {
 	async configUpdated(config) {
 		this.config = { ...CONFIG_DEFAULTS, ...stripEmpty(config) }
 		this.knownLayers = new Set()
+		this.knownOutputs = new Set()
 		this.updateDefinitions()
 		this.connect()
 	}
@@ -228,6 +233,10 @@ class CasparInstance extends InstanceBase {
 		return this.state[parseInt(channel, 10)]?.layers?.[parseInt(layer, 10)]
 	}
 
+	outputAt(channel, index) {
+		return this.state[parseInt(channel, 10)]?.outputs?.[parseInt(index, 10)]
+	}
+
 	framerateOf(channel) {
 		return this.state[parseInt(channel, 10)]?.framerate || 0
 	}
@@ -242,11 +251,21 @@ class CasparInstance extends InstanceBase {
 			if (/^\d+-\d+$/.test(k)) keys.add(k)
 		}
 		for (const [c, st] of Object.entries(this.state)) for (const l of Object.keys(st.layers)) keys.add(`${c}-${l}`)
-		const sig = [...keys].sort().join() + '|' + this.channels.map((c) => c.channel).join()
+		// outputs added with a number (recording on 1-700) keep their variables once seen
+		const outKeys = new Set(this.knownOutputs)
+		const pc = this.config.preset_channel || 1
+		for (const n of PRESET_OUTPUTS) outKeys.add(`${pc}-${n}`) // the record / stream presets show their time
+		for (const [c, st] of Object.entries(this.state))
+			for (const n of Object.keys(st.outputs || {})) outKeys.add(`${c}-${n}`)
+		const sig =
+			[...keys].sort().join() + '|' + [...outKeys].sort().join() + '|' + this.channels.map((c) => c.channel).join()
 		if (sig !== this.varSig) {
 			this.varSig = sig
 			this.knownLayers = keys
-			this.setVariableDefinitions(V.definitions(this.channels, [...keys].sort(sortLayers)))
+			this.knownOutputs = outKeys
+			this.setVariableDefinitions(
+				V.definitions(this.channels, [...keys].sort(sortLayers), [...outKeys].sort(sortLayers)),
+			)
 			this.values = {}
 		}
 		const values = {}
@@ -256,13 +275,17 @@ class CasparInstance extends InstanceBase {
 			const layer = this.state[c]?.layers?.[l]
 			Object.assign(values, V.layerValues(key, layer, S.layerState(layer, this.framerateOf(c))))
 		}
+		for (const key of outKeys) {
+			const [c, n] = key.split('-')
+			Object.assign(values, V.outputValues(key, this.outputAt(c, n)))
+		}
 		const changed = {}
 		for (const [k, v] of Object.entries(values)) {
 			if (this.values[k] !== v) changed[k] = this.values[k] = v
 		}
 		if (Object.keys(changed).length) {
 			this.setVariableValues(changed)
-			this.checkFeedbacks('layer_clip', 'layer_state', 'time_remaining')
+			this.checkFeedbacks('layer_clip', 'layer_state', 'time_remaining', 'output_active')
 		}
 	}
 

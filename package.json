@@ -1,6 +1,6 @@
 {
 	"name": "casparcg-server",
-	"version": "3.0.0-beta.1-by-GC",
+	"version": "3.0.0-beta.2-by-GC",
 	"description": "Companion CasparCG Kit by GreenCrew - Bitfocus Companion module for CasparCG Server, with AI skills",
 	"author": "Julian Szymański / GreenCrew",
 	"main": "index.js",

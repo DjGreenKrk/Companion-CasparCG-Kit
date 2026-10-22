@@ -96,13 +96,19 @@ const clipOverride = (label = 'Or clip name / variable (overrides the list)') =>
 	})
 
 /** Transition block for PLAY / LOAD / LOADBG. */
-function transitionFields(self) {
+function transitionFields(self, { sting = true } = {}) {
 	const isDir = (o) => ['PUSH', 'SLIDE', 'WIPE'].includes(o.transition)
 	const isTimed = (o) => o.transition !== 'CUT' && o.transition !== 'STING'
 	const isSting = (o) => o.transition === 'STING'
 	const stingMask = (o) => o.transition === 'STING' && !o.sting_cut
-	return [
-		{ type: 'dropdown', id: 'transition', label: 'Transition', default: 'CUT', choices: TRANSITION_CHOICES },
+	const fields = [
+		{
+			type: 'dropdown',
+			id: 'transition',
+			label: 'Transition',
+			default: 'CUT',
+			choices: sting ? TRANSITION_CHOICES : TRANSITION_CHOICES.filter((c) => c.id !== 'STING'),
+		},
 		number('transition_duration', 'Transition duration (frames)', '25', { isVisible: isTimed }),
 		tweenField('transition_tween', { isVisible: isTimed }),
 		{
@@ -123,6 +129,7 @@ function transitionFields(self) {
 			tooltip: 'Start + duration must be at least the mask length, otherwise the sting ends early',
 		}),
 	]
+	return sting ? fields : fields.filter((f) => !f.id.startsWith('sting'))
 }
 
 const mixerTailFields = () => [

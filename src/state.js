@@ -87,7 +87,28 @@ async function parseChannelInfo(xml, paths) {
 		const bg = producerInfo(first(l.background), paths)
 		if (fg || bg) layers[m[1]] = { fg, bg }
 	}
-	return { format: first(ch.format) || '', framerate, layers }
+	return { format: first(ch.format) || '', framerate, layers, outputs: parseOutputs(ch) }
+}
+
+/** <output><port><port_701><consumer>ffmpeg</consumer><file><frame>72</frame><path>...</path> -> { 701: {...} } */
+function parseOutputs(ch) {
+	const outputs = {}
+	const ports = first(first(ch.output)?.port) || {}
+	for (const [key, node] of Object.entries(ports)) {
+		const m = /^port_(\d+)$/.exec(key)
+		if (!m) continue
+		const n = first(node) || {}
+		const file = first(n.file) || {}
+		const fps = Number(first(file.fps)) || 0
+		const frame = Number(first(file.frame))
+		outputs[m[1]] = {
+			consumer: first(n.consumer) || '',
+			path: first(file.path) || '',
+			frames: isNaN(frame) ? null : frame,
+			seconds: fps && !isNaN(frame) ? frame / fps : null,
+		}
+	}
+	return outputs
 }
 
 function parsePaths(xml) {

@@ -75,3 +75,14 @@ test('upgrade from 2.x options', () => {
 	assert.strictEqual(actions[2].options.playonload, true)
 	assert.strictEqual(actions[2].options.data_format, 'pairs')
 })
+
+test('outputs from INFO <channel>: number, path, running time', async () => {
+	const xml = `<?xml version="1.0" encoding="utf-8"?><channel><format>1080p2500</format><framerate>25</framerate><framerate>1</framerate>
+<output><port><port_701><consumer>ffmpeg</consumer><file><fps>25</fps><frame>72</frame><path>/opt/casparcg/rec/a.mp4</path></file></port_701>
+<port_703><consumer>ffmpeg</consumer><file><fps>25</fps><frame>43</frame><path>rtmp://127.0.0.1/live/test</path></file></port_703></port></output></channel>`
+	const st = await S.parseChannelInfo(xml, null)
+	assert.deepStrictEqual(st.outputs, {
+		701: { consumer: 'ffmpeg', path: '/opt/casparcg/rec/a.mp4', frames: 72, seconds: 2.88 },
+		703: { consumer: 'ffmpeg', path: 'rtmp://127.0.0.1/live/test', frames: 43, seconds: 1.72 },
+	})
+})

@@ -103,6 +103,18 @@ module.exports = function feedbackDefinitions(self) {
 				return fg.duration - fg.time <= (isNaN(n) ? 10 : n)
 			},
 		},
+		output_active: {
+			type: 'boolean',
+			name: 'Output is running (recording / stream)',
+			description: 'True while the channel has an output with this number (Output: start).',
+			defaultStyle: { bgcolor: RED, color: WHITE },
+			options: [F.channel(), F.number('index', 'Output number', '700')],
+			callback: async (fb, context) => {
+				const ch = await self.resolve(fb.options.channel, context)
+				const n = await self.resolve(fb.options.index, context)
+				return !!self.outputAt(ch, n)
+			},
+		},
 		connected: {
 			type: 'boolean',
 			name: 'Connected to the server',
