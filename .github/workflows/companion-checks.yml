@@ -4,7 +4,7 @@ name: Companion module checks
 # repository. Their workflow also requires the repository to be named companion-module-<id> with the
 # same manifest id, which a kit repository with skills cannot meet; everything else is checked here
 # the same way: yarn lockfile, @companion-module/tools minimum, manifest and HELP, version = tag,
-# build with companion-module-build, and the built module starts.
+# build with companion-module-build, and the built module loads the way Companion loads it.
 on:
   push:
     branches: [main]
@@ -77,18 +77,24 @@ jobs:
           echo "@companion-module/tools $installed (minimum $floor)"
 
       - name: Build and package
-        run: |
-          if node -e "process.exit(require('./package.json').scripts?.build ? 0 : 1)"; then yarn run build; fi
-          yarn companion-module-build --output=pkg
+        run: yarn companion-module-build --output=pkg
 
-      - name: The built module starts
+      - name: The built module loads the way Companion loads it
         timeout-minutes: 1
         run: |
-          set +e
-          out=$(node pkg/main.js 2>&1); code=$?
-          # started outside Companion, a working module stops with "Failed to startup module" (no manifest handshake)
-          if [ $code -eq 0 ] || echo "$out" | grep -q "Failed to startup module"; then
-            echo "module loads"
-          else
-            echo "$out"; echo "::error::the built module does not load"; exit 1
-          fi
+          # @companion-module/tools 3 writes pkg.tgz (folder casparcg-server/ inside); Companion imports main.js and
+          # expects the instance class as the default export and UpgradeScripts as a named export (module API 2.x)
+          mkdir -p built && tar -xzf pkg.tgz -C built
+          dir=$(ls -d built/*/ | head -n1)
+          node --input-type=module -e "
+            const m = await import('./${dir}main.js')
+            const fail = (msg) => { console.log('::error::' + msg); process.exit(1) }
+            if (typeof m.default !== 'function') fail('main.js has no default-exported class')
+            if (!Array.isArray(m.UpgradeScripts)) fail('main.js has no UpgradeScripts array')
+            console.log('module loads: class ' + m.default.name + ', ' + m.UpgradeScripts.length + ' upgrade script(s)')
+          "
+          node -e "
+            const m = require('./${dir}companion/manifest.json')
+            if (m.type !== 'connection') { console.log('::error::built manifest type is ' + m.type); process.exit(1) }
+            console.log('built manifest: apiVersion ' + m.runtime.apiVersion + ', ' + m.runtime.type + ', version ' + m.version)
+          "

@@ -1,9 +1,9 @@
 {
 	"name": "casparcg-server",
-	"version": "3.0.0-beta.3-by-GC",
+	"version": "3.1.0-beta.1-by-GC",
 	"description": "Companion CasparCG Kit by GreenCrew - Bitfocus Companion module for CasparCG Server, with AI skills",
 	"author": "Julian Szymański / GreenCrew",
-	"main": "index.js",
+	"main": "main.mjs",
 	"scripts": {
 		"test": "node --test test/*.test.js",
 		"build": "companion-module-build",
@@ -12,7 +12,7 @@
 	"prettier": "@companion-module/tools/.prettierrc.json",
 	"license": "MIT",
 	"dependencies": {
-		"@companion-module/base": "~1.14.1",
+		"@companion-module/base": "~2.1.3",
 		"xml2js": "^0.6.2"
 	},
 	"repository": {
@@ -20,8 +20,8 @@
 		"url": "git+https://github.com/DjGreenKrk/Companion-CasparCG-Kit.git"
 	},
 	"devDependencies": {
-		"@companion-module/tools": "^2.8.0",
-		"prettier": "^3.6.2"
+		"@companion-module/tools": "^3.1.1",
+		"prettier": "^3.8.1"
 	},
 	"engines": {
 		"node": ">=18.12"

@@ -1,7 +1,8 @@
 // Shared option field definitions for actions and feedbacks.
 const { TWEENS, DIRECTIONS, TRANSITIONS, MIXER_PROPS } = require('./build')
 
-const VARS = { local: true }
+// API 2.x: Companion replaces variables (local ones too) in these fields before calling the module
+const VARS = true
 const NUM_OR_VAR = '/^(-?\\d+|.*\\$\\(.+\\).*|)$/'
 
 const channel = (def = '1') => ({
@@ -44,6 +45,16 @@ const text = (id, label, def = '', extra = {}) => ({
 })
 
 const checkbox = (id, label, def = false, extra = {}) => ({ type: 'checkbox', id, label, default: def, ...extra })
+
+/**
+ * API 2.x has no isVisible functions: visibility is a Companion expression over $(options:<id>), and the fields
+ * it reads must not be expressions themselves (disableAutoExpression).
+ */
+const when = (expr) => ({ isVisibleExpression: expr })
+const fixed = (field) => ({ ...field, disableAutoExpression: true })
+const opt = (id) => `$(options:${id})`
+const oneOf = (id, values) => '(' + values.map((v) => `${opt(id)} == '${v}'`).join(' || ') + ')'
+const noneOf = (id, values) => '(' + values.map((v) => `${opt(id)} != '${v}'`).join(' && ') + ')'
 
 const TWEEN_CHOICES = TWEENS.map((t) => ({ id: t, label: t }))
 
@@ -97,35 +108,35 @@ const clipOverride = (label = 'Or clip name / variable (overrides the list)') =>
 
 /** Transition block for PLAY / LOAD / LOADBG. */
 function transitionFields(self, { sting = true } = {}) {
-	const isDir = (o) => ['PUSH', 'SLIDE', 'WIPE'].includes(o.transition)
-	const isTimed = (o) => o.transition !== 'CUT' && o.transition !== 'STING'
-	const isSting = (o) => o.transition === 'STING'
-	const stingMask = (o) => o.transition === 'STING' && !o.sting_cut
+	const isDir = when(oneOf('transition', ['PUSH', 'SLIDE', 'WIPE']))
+	const isTimed = when(noneOf('transition', ['CUT', 'STING']))
+	const isSting = when(oneOf('transition', ['STING']))
+	const stingMask = when(`${oneOf('transition', ['STING'])} && !${opt('sting_cut')}`)
 	const fields = [
-		{
+		fixed({
 			type: 'dropdown',
 			id: 'transition',
 			label: 'Transition',
 			default: 'CUT',
 			choices: sting ? TRANSITION_CHOICES : TRANSITION_CHOICES.filter((c) => c.id !== 'STING'),
-		},
-		number('transition_duration', 'Transition duration (frames)', '25', { isVisible: isTimed }),
-		tweenField('transition_tween', { isVisible: isTimed }),
+		}),
+		number('transition_duration', 'Transition duration (frames)', '25', isTimed),
+		tweenField('transition_tween', isTimed),
 		{
 			type: 'dropdown',
 			id: 'direction',
 			label: 'Direction',
 			default: '',
 			choices: DIRECTION_CHOICES,
-			isVisible: isDir,
+			...isDir,
 		},
-		checkbox('sting_cut', 'Sting: no mask, cut at the trigger point', false, { isVisible: isSting }),
-		{ ...mediaField(self, { id: 'sting_mask', label: 'Sting mask clip' }), isVisible: stingMask },
-		{ ...mediaField(self, { id: 'sting_overlay', label: 'Sting overlay clip (optional)' }), isVisible: isSting },
-		number('sting_trigger', 'Sting trigger point (frames)', '', { isVisible: isSting }),
-		number('sting_audio_start', 'Sting audio fade start (frames, optional)', '', { isVisible: isSting }),
+		fixed(checkbox('sting_cut', 'Sting: no mask, cut at the trigger point', false, isSting)),
+		{ ...mediaField(self, { id: 'sting_mask', label: 'Sting mask clip' }), ...stingMask },
+		{ ...mediaField(self, { id: 'sting_overlay', label: 'Sting overlay clip (optional)' }), ...isSting },
+		number('sting_trigger', 'Sting trigger point (frames)', '', isSting),
+		number('sting_audio_start', 'Sting audio fade start (frames, optional)', '', isSting),
 		number('sting_audio_duration', 'Sting audio fade duration (frames, optional)', '', {
-			isVisible: isSting,
+			...isSting,
 			tooltip: 'Start + duration must be at least the mask length, otherwise the sting ends early',
 		}),
 	]
@@ -134,7 +145,7 @@ function transitionFields(self, { sting = true } = {}) {
 
 const mixerTailFields = () => [
 	number('duration', 'Duration (frames, 0 = at once)', '0', { width: 4 }),
-	tweenField('tween', { isVisible: (o) => o.duration !== '0' && o.duration !== '' }),
+	tweenField('tween'),
 	checkbox('defer', 'Defer (apply on MIXER COMMIT)', false),
 ]
 
@@ -147,6 +158,11 @@ module.exports = {
 	number,
 	text,
 	checkbox,
+	when,
+	fixed,
+	opt,
+	oneOf,
+	noneOf,
 	tweenField,
 	mediaField,
 	clipOverride,

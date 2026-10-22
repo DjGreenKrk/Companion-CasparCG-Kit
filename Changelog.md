@@ -1,3 +1,15 @@
+# Companion CasparCG Kit 3.1.0-beta.1
+
+Moved to Companion's module API 2.1 (`@companion-module/base` 2.1.3). Needs Companion 5.0 or newer; tested on Companion 5.1.0 with CasparCG Server 2.5.1. For Companion 4.x keep 3.0.0-beta.3.
+
+* [FEATURE] Fields can be expressions again (Companion 5.1 reset expression mode for modules on API 1.x), e.g. a layer `10 + $(local:n)`; the dropdowns and checkboxes that show or hide other fields stay plain values
+* [CHANGE] Companion resolves variables - local button variables included - before the module runs an action (API 2.x)
+* [CHANGE] Presets come in sections (API 2.x structure); field visibility uses Companion expressions
+* [BUGFIX] Buttons made before an option existed get its default once: API 2.x skips an action whose dropdown has no value (seen with CG ADD "pass as" on a 3.0 button)
+* [CHANGE] Upgrade scripts read and write options as `{ value, isExpression }` and leave fields that are expressions alone
+* [CHANGE] Build with @companion-module/tools 3 (package `.tgz`), entry `main.mjs` exports the class and `UpgradeScripts`
+* [FEATURE] Skill **casparcg-amcp-button-builder 2.2.1**: module 3.1 notes
+
 # Companion CasparCG Kit 3.0.0-beta.3
 
 Limits found by testing CasparCG Server 2.5.1 with wrong and unusual input: where the server answers OK but does something else, the module now stops or corrects the command.

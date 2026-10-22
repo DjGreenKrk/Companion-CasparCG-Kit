@@ -26,7 +26,7 @@ module.exports = function actionDefinitions(self) {
 	const learnClip = async (action) => {
 		const st = self.layerAt(action.options.channel, action.options.layer)
 		if (!st?.fg?.name) return undefined
-		return { ...action.options, clip_dd: st.fg.name, clip: '' }
+		return { clip_dd: st.fg.name, clip: '' } // API 2.x: learn returns only the changed values
 	}
 
 	const playOptions = (verb) => [
@@ -117,12 +117,13 @@ module.exports = function actionDefinitions(self) {
 				{
 					type: 'dropdown',
 					id: 'param',
+					disableAutoExpression: true,
 					label: 'Parameter',
 					default: 'LOOP',
 					choices: CALL_PARAMS.map((p) => ({ id: p, label: p })),
 				},
-				F.checkbox('loop_value', 'Loop on', false, { isVisible: (o) => o.param === 'LOOP' }),
-				F.number('value', 'Frame', '0', { isVisible: (o) => o.param !== 'LOOP' }),
+				F.checkbox('loop_value', 'Loop on', false, { ...F.when(F.oneOf('param', ['LOOP'])) }),
+				F.number('value', 'Frame', '0', { ...F.when(F.noneOf('param', ['LOOP'])) }),
 			],
 			callback: run((o) => B.callParam(o)),
 		},
@@ -192,6 +193,7 @@ module.exports = function actionDefinitions(self) {
 				{
 					type: 'dropdown',
 					id: 'property',
+					disableAutoExpression: true,
 					label: 'Property',
 					default: 'CROP',
 					choices: [
@@ -299,8 +301,14 @@ module.exports = function actionDefinitions(self) {
 				F.text('fields', 'Fields', 'f0="Jan Kowalski" f1="Reporter"', {
 					tooltip: 'f0="$(local:name)" f1="$(custom:role)" - shown as text (quotes and < > are fine)',
 				}),
-				{ type: 'dropdown', id: 'animation', label: 'Animation', default: 'slide_left', choices: H.ANIMATIONS },
-				F.number('duration', 'Animation time (ms)', '500', { isVisible: (o) => o.animation !== 'none' }),
+				F.fixed({
+					type: 'dropdown',
+					id: 'animation',
+					label: 'Animation',
+					default: 'slide_left',
+					choices: H.ANIMATIONS,
+				}),
+				F.number('duration', 'Animation time (ms)', '500', { ...F.when(F.noneOf('animation', ['none'])) }),
 				YES('playonload', 'Show at once (untick to load hidden, then "Template: play")', true),
 			],
 			callback: run((o) => H.show(o)),
@@ -337,6 +345,7 @@ module.exports = function actionDefinitions(self) {
 				{
 					type: 'dropdown',
 					id: 'source',
+					disableAutoExpression: true,
 					label: 'Source',
 					default: 'color',
 					choices: [
@@ -353,24 +362,26 @@ module.exports = function actionDefinitions(self) {
 					id: 'color',
 					label: 'Colour',
 					default: 0x000000,
-					isVisible: (o) => o.source === 'color',
+					...F.when(F.oneOf('source', ['color'])),
 				},
-				F.number('opacity', 'Opacity (%)', '100', { isVisible: (o) => o.source === 'color' }),
+				F.number('opacity', 'Opacity (%)', '100', { ...F.when(F.oneOf('source', ['color'])) }),
 				F.text('color_text', 'Or colours as text (overrides the picker)', '', {
-					isVisible: (o) => o.source === 'color',
+					...F.when(F.oneOf('source', ['color'])),
 					tooltip:
 						'#RRGGBB, #AARRGGBB or BLACK, WHITE, RED, GREEN, BLUE, ORANGE, YELLOW, BROWN, GRAY, TEAL, EMPTY. Several colours = horizontal gradient: #FF0000 #0000FF',
 				}),
 				F.text('url', 'Address', '', {
-					isVisible: (o) => o.source === 'html' || o.source === 'stream',
+					...F.when(F.oneOf('source', ['html', 'stream'])),
 					tooltip:
 						'Web page: https://... or file:///... Stream: srt://host:port?mode=caller, rtmp://..., http://...m3u8',
 				}),
-				F.number('route_channel', 'Source channel', '1', { isVisible: (o) => o.source === 'route' }),
-				F.number('route_layer', 'Source layer (empty = whole channel)', '', { isVisible: (o) => o.source === 'route' }),
-				F.text('ndi_name', 'NDI source (PC NAME/Source)', '', { isVisible: (o) => o.source === 'ndi' }),
-				F.number('device', 'DeckLink device', '1', { isVisible: (o) => o.source === 'decklink' }),
-				F.text('format', 'Input format (optional, e.g. 1080i5000)', '', { isVisible: (o) => o.source === 'decklink' }),
+				F.number('route_channel', 'Source channel', '1', { ...F.when(F.oneOf('source', ['route'])) }),
+				F.number('route_layer', 'Source layer (empty = whole channel)', '', {
+					...F.when(F.oneOf('source', ['route'])),
+				}),
+				F.text('ndi_name', 'NDI source (PC NAME/Source)', '', { ...F.when(F.oneOf('source', ['ndi'])) }),
+				F.number('device', 'DeckLink device', '1', { ...F.when(F.oneOf('source', ['decklink'])) }),
+				F.text('format', 'Input format (optional, e.g. 1080i5000)', '', { ...F.when(F.oneOf('source', ['decklink'])) }),
 				...F.transitionFields(self, { sting: false }),
 			],
 			callback: run((o) => B.playSource(o)),
@@ -407,7 +418,7 @@ module.exports = function actionDefinitions(self) {
 				F.layer(),
 				F.number('value', 'New speed (px per frame, 0 = stop)', '0'),
 				F.number('duration', 'Change over (frames)', '25'),
-				F.tweenField('tween', { isVisible: (o) => o.duration !== '0' && o.duration !== '' }),
+				F.tweenField('tween'),
 			],
 			callback: run((o) => B.scrollSpeed(o)),
 		},
@@ -417,8 +428,8 @@ module.exports = function actionDefinitions(self) {
 			options: [
 				F.channel(),
 				F.layer(),
-				YES('reload', 'Reload the page instead (RELOAD)'),
-				F.text('js', 'JavaScript', '', { multiline: true, isVisible: (o) => !o.reload }),
+				F.fixed(YES('reload', 'Reload the page instead (RELOAD)')),
+				F.text('js', 'JavaScript', '', { multiline: true, ...F.when(`!${F.opt('reload')}`) }),
 			],
 			callback: run((o) => B.pageCall(o)),
 		},
@@ -440,6 +451,7 @@ module.exports = function actionDefinitions(self) {
 				{
 					type: 'dropdown',
 					id: 'kind',
+					disableAutoExpression: true,
 					label: 'Output',
 					default: 'file',
 					choices: [
@@ -449,7 +461,7 @@ module.exports = function actionDefinitions(self) {
 					],
 				},
 				F.text('path', 'File (in the media folder unless absolute)', 'recording_{datetime}', {
-					isVisible: (o) => o.kind === 'file',
+					...F.when(F.oneOf('kind', ['file'])),
 					tooltip: '{date}, {time} and {datetime} are replaced; the extension comes from the format when missing',
 				}),
 				{
@@ -457,7 +469,7 @@ module.exports = function actionDefinitions(self) {
 					id: 'preset',
 					label: 'Format',
 					default: 'h264',
-					isVisible: (o) => o.kind === 'file',
+					...F.when(F.oneOf('kind', ['file'])),
 					choices: [
 						{ id: 'h264', label: 'H.264 + AAC (.mp4)' },
 						{ id: 'prores', label: 'ProRes 422 + PCM (.mov) - needs a fast CPU' },
@@ -465,7 +477,7 @@ module.exports = function actionDefinitions(self) {
 					],
 				},
 				F.text('url', 'Address', 'srt://192.168.0.10:9000?mode=caller', {
-					isVisible: (o) => o.kind === 'stream',
+					...F.when(F.oneOf('kind', ['stream'])),
 					tooltip:
 						'srt://receiver:port?mode=caller (the receiver listens - vMix, OBS, a decoder), rtmp://server/app/key. Listener mode (srt://0.0.0.0:9000?mode=listener) cannot be stopped until a receiver has connected (2.5.1).',
 				}),
@@ -474,7 +486,7 @@ module.exports = function actionDefinitions(self) {
 					id: 'stream_preset',
 					label: 'Format',
 					default: 'srt',
-					isVisible: (o) => o.kind === 'stream',
+					...F.when(F.oneOf('kind', ['stream'])),
 					choices: [
 						{ id: 'srt', label: 'MPEG-TS, H.264 8 Mb/s (SRT)' },
 						{ id: 'rtmp', label: 'FLV, H.264 6 Mb/s (RTMP: YouTube, Facebook...)' },
@@ -482,11 +494,11 @@ module.exports = function actionDefinitions(self) {
 					],
 				},
 				F.text('args', 'Extra ffmpeg options (-name:stream form, e.g. -b:v 4000k)', '', {
-					isVisible: (o) => o.kind !== 'ndi',
+					...F.when(F.noneOf('kind', ['ndi'])),
 					tooltip:
 						'Test them before the show: on 2.5.1 an unknown codec made the server stop answering and crash (tested).',
 				}),
-				F.text('ndi_name', 'NDI name', 'CasparCG', { isVisible: (o) => o.kind === 'ndi' }),
+				F.text('ndi_name', 'NDI name', 'CasparCG', { ...F.when(F.oneOf('kind', ['ndi'])) }),
 			],
 			callback: run((o) => B.outputAdd(o)),
 		},
@@ -529,8 +541,8 @@ module.exports = function actionDefinitions(self) {
 }
 
 function geometryFields() {
-	const on = (p) => (o) => o.property === p
-	const n = (id, label, def, p, extra) => F.number(id, label, def, { width: 3, isVisible: on(p), ...extra })
+	const n = (id, label, def, p, extra) =>
+		F.number(id, label, def, { width: 3, ...F.when(F.oneOf('property', [p])), ...extra })
 	return [
 		n('crop_l', 'Left edge (%)', '0', 'CROP'),
 		n('crop_t', 'Top edge (%)', '0', 'CROP'),
@@ -558,6 +570,7 @@ function cgDataFields() {
 		{
 			type: 'dropdown',
 			id: 'pass_as',
+			disableAutoExpression: true,
 			label: 'Pass data to the template as',
 			default: 'string',
 			choices: [
@@ -570,6 +583,7 @@ function cgDataFields() {
 		{
 			type: 'dropdown',
 			id: 'data_format',
+			disableAutoExpression: true,
 			label: 'Data format',
 			default: 'pairs',
 			choices: [
@@ -578,7 +592,7 @@ function cgDataFields() {
 			],
 		},
 		F.checkbox('json', 'Send fields as JSON (HTML templates)', true, {
-			isVisible: (o) => o.data_format !== 'raw' && o.pass_as !== 'object',
+			...F.when(`${F.noneOf('data_format', ['raw'])} && ${F.noneOf('pass_as', ['object'])}`),
 		}),
 		F.text('variables', 'Data', '', {
 			multiline: true,

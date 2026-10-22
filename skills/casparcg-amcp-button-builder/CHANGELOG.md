@@ -3,6 +3,10 @@
 Version in `SKILL.md` (`metadata.version`). Major: advice replaced or removed; minor: new tested
 facts or sections; patch: wording and corrections without changing advice.
 
+## 2.2.1 — 2026-10-22
+
+* [CHANGE] Companion CasparCG Kit 3.1: module API 2.1 - Companion resolves variables, expressions work in fields again, Companion 5.0+ needed
+
 ## 2.2.0 — 2026-10-22
 
 * [FEATURE] SKILL.md rule 7b ("202 does not mean it did what you meant") and video alpha in 7a

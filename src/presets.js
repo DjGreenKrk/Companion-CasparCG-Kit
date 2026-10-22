@@ -17,14 +17,26 @@ module.exports = function presetDefinitions(self) {
 	for (const [id, def] of Object.entries(self.actionDefs)) {
 		defaults[id] = Object.fromEntries((def.options || []).map((o) => [o.id, o.default ?? '']))
 	}
+	// only keys the definition has: module API 2.x warns about presets with unknown option keys
+	const only = (keys, o) => Object.fromEntries(Object.entries(o).filter(([k]) => keys.includes(k)))
 	const a = (actionId, options = {}, delay) => {
-		const act = { actionId, options: { ...defaults[actionId], channel: ch, layer, ...options } }
+		const keys = Object.keys(defaults[actionId])
+		const act = { actionId, options: only(keys, { ...defaults[actionId], channel: ch, layer, ...options }) }
 		if (delay) act.delay = delay
 		return act
 	}
-	const fb = (feedbackId, options, style) => ({ feedbackId, options: { channel: ch, layer, ...options }, style })
+	const fbKeys = Object.fromEntries(
+		Object.entries(self.feedbackDefs || {}).map(([id, d]) => [id, (d.options || []).map((o) => o.id)]),
+	)
+	const fb = (feedbackId, options, style) => ({
+		feedbackId,
+		options: fbKeys[feedbackId]
+			? only(fbKeys[feedbackId], { channel: ch, layer, ...options })
+			: { channel: ch, layer, ...options },
+		style,
+	})
 	const btn = (category, name, text, steps, feedbacks = [], style = {}) => ({
-		type: 'button',
+		type: 'simple',
 		category,
 		name,
 		style: { text, size: 'auto', color: WHITE, bgcolor: GREY, ...style },
@@ -314,5 +326,25 @@ module.exports = function presetDefinitions(self) {
 			),
 		)
 	}
-	return presets
+	return withStructure(presets)
+}
+
+/**
+ * Module API 2.x: presets come with a structure of sections instead of a category on each preset.
+ * Sections keep the order in which their first preset was added.
+ */
+function withStructure(all) {
+	const sections = new Map()
+	const presets = {}
+	for (const [id, { category, ...preset }] of Object.entries(all)) {
+		if (!sections.has(category)) sections.set(category, [])
+		sections.get(category).push(id)
+		presets[id] = preset
+	}
+	const structure = [...sections].map(([name, ids], i) => ({
+		id: `s${i}_${name.toLowerCase().replace(/[^a-z0-9]+/g, '_')}`,
+		name,
+		definitions: ids,
+	}))
+	return { structure, presets }
 }

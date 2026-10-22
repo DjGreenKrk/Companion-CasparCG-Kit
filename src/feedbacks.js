@@ -47,7 +47,7 @@ module.exports = function feedbackDefinitions(self) {
 			learn: (fb) => {
 				const st = self.layerAt(fb.options.channel, fb.options.layer)
 				const p = fb.options.where === 'bg' ? st?.bg : st?.fg
-				return p?.name ? { ...fb.options, clip_dd: p.name, clip: '' } : undefined
+				return p?.name ? { clip_dd: p.name, clip: '' } : undefined
 			},
 		},
 		layer_state: {

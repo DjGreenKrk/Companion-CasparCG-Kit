@@ -1,4 +1,6 @@
 {
+	"$schema": "../node_modules/@companion-module/base/assets/manifest.schema.json",
+	"type": "connection",
 	"id": "casparcg-server",
 	"name": "Companion CasparCG Kit",
 	"shortname": "caspar",
@@ -23,7 +25,7 @@
 		"type": "node22",
 		"api": "nodejs-ipc",
 		"apiVersion": "0.0.0",
-		"entrypoint": "../index.js"
+		"entrypoint": "../main.mjs"
 	},
 	"manufacturer": "CasparCG",
 	"products": [

@@ -5,6 +5,7 @@ const path = require('node:path')
 const S = require('../src/state')
 const V = require('../src/variables')
 const upgrades = require('../src/upgrades')
+const wrap = (o) => Object.fromEntries(Object.entries(o).map(([k, value]) => [k, { value, isExpression: false }]))
 
 const paths = { media: '/opt/casparcg/media/', template: '/opt/casparcg/template/' }
 
@@ -52,7 +53,8 @@ test('upgrade from 2.x options', () => {
 		{
 			id: 'a',
 			actionId: 'PLAY',
-			options: {
+			// module API 2.x wraps every option as { value, isExpression }
+			options: wrap({
 				channel: '1',
 				layer: '',
 				clip_dd: 'X',
@@ -62,18 +64,27 @@ test('upgrade from 2.x options', () => {
 				transition: 'MIX',
 				transition_duration: '25',
 				transition_tween: 'linear',
-			},
+			}),
 		},
-		{ id: 'b', actionId: 'COMMAND', options: { cmd: 'CLEAR 1' } },
-		{ id: 'c', actionId: 'CG ADD', options: { playonload: 'true', json: false } },
+		{ id: 'b', actionId: 'COMMAND', options: wrap({ cmd: 'CLEAR 1' }) },
+		{ id: 'c', actionId: 'CG ADD', options: wrap({ playonload: 'true', json: false }) },
+		{
+			id: 'd',
+			actionId: 'PLAY',
+			options: { ...wrap({ channel: '2', clip_dd: 'Y' }), loop: { value: '$(custom:loop)', isExpression: true } },
+		},
 	]
 	const r = upgrades[0]({}, { actions, feedbacks: [], config: null })
-	assert.strictEqual(r.updatedActions.length, 2)
-	assert.strictEqual(actions[0].options.loop, true)
-	assert.strictEqual(actions[0].options.auto, false)
-	assert.strictEqual(actions[0].options.direction, '')
-	assert.strictEqual(actions[2].options.playonload, true)
-	assert.strictEqual(actions[2].options.data_format, 'pairs')
+	const v = (a, k) => a.options[k].value
+	assert.strictEqual(r.updatedActions.length, 3)
+	assert.strictEqual(v(actions[0], 'loop'), true)
+	assert.strictEqual(v(actions[0], 'auto'), false)
+	assert.strictEqual(v(actions[0], 'direction'), '')
+	assert.strictEqual(v(actions[2], 'playonload'), true)
+	assert.strictEqual(v(actions[2], 'data_format'), 'pairs')
+	// an option the user turned into an expression is kept
+	assert.deepStrictEqual(actions[3].options.loop, { value: '$(custom:loop)', isExpression: true })
+	assert.strictEqual(v(actions[3], 'transition'), 'CUT')
 })
 
 test('outputs from INFO <channel>: number, path, running time', async () => {
@@ -91,4 +102,29 @@ test('a stream output without a frame counter is not running', () => {
 	assert.strictEqual(S.outputRunning({ consumer: 'ffmpeg', path: 'srt://x', frames: null, seconds: null }), false)
 	assert.strictEqual(S.outputRunning({ consumer: 'ffmpeg', path: 'a.mp4', frames: 0, seconds: 0 }), true)
 	assert.strictEqual(S.outputRunning(undefined), false)
+})
+
+test('upgrade: missing options get their current default (API 2.x skips actions with an empty dropdown)', () => {
+	const actions = [
+		{
+			id: 'a',
+			actionId: 'CG ADD',
+			options: wrap({ channel: '2', layer: '20', template_dd: 'TPL', variables: 'f0="x"' }),
+		},
+		{ id: 'b', actionId: 'CG ADD', options: wrap({ channel: '2', pass_as: 'object', data_format: 'raw' }) },
+		{ id: 'c', actionId: 'NOT_OURS', options: {} },
+	]
+	const feedbacks = [{ id: 'f', feedbackId: 'layer_clip', options: wrap({ channel: '1', layer: '10', clip_dd: 'X' }) }]
+	const r = upgrades[1]({}, { actions, feedbacks, config: null })
+	assert.strictEqual(actions[0].options.pass_as.value, 'string')
+	assert.strictEqual(actions[0].options.data_format.value, 'pairs')
+	assert.strictEqual(actions[0].options.variables.value, 'f0="x"')
+	assert.strictEqual(actions[1].options.pass_as.value, 'object')
+	assert.strictEqual(feedbacks[0].options.where.value, 'fg')
+	assert.deepStrictEqual(
+		r.updatedActions.map((a) => a.id),
+		['a', 'b'],
+	)
+	assert.strictEqual(r.updatedFeedbacks.length, 1)
+	assert.strictEqual(r.updatedConfig, null)
 })

@@ -10,13 +10,13 @@ action has its own fields (channel, layer, clip, transition, template data) inst
 line, every field takes Companion variables, and the buttons show what is on air. Made by
 GreenCrew, part of the GreenCrew Tools family.
 
-**Tested on Companion 5.1.0 with CasparCG Server 2.5.1** (Linux). Companion 5.0.x loads the module (same module
-API) but has not been tested with it yet.
+**Tested on Companion 5.1.0 with CasparCG Server 2.5.1** (Linux). Needs **Companion 5.0 or newer** (module API 2.1;
+Companion 5.0.x accepts it but has not been tested with it yet). For Companion 4.x use release 3.0.0-beta.3.
 
 | Part | Version | What it does |
 | --- | --- | --- |
-| Companion module (`companion/`, `src/`) | 3.0.0-beta.3-by-GC | Controls CasparCG Server from Companion |
-| Skill [casparcg-amcp-button-builder](skills/casparcg-amcp-button-builder/) | 2.2.0 | Writes, reviews and debugs AMCP commands and the Companion buttons that send them |
+| Companion module (`companion/`, `src/`) | 3.1.0-beta.1-by-GC | Controls CasparCG Server from Companion |
+| Skill [casparcg-amcp-button-builder](skills/casparcg-amcp-button-builder/) | 2.2.1 | Writes, reviews and debugs AMCP commands and the Companion buttons that send them |
 | Skill [event-lower-third-generator](skills/event-lower-third-generator/) | 0.1.0 | Generates HTML lower thirds and event graphics (speaker, timer, ticker…) from client materials |
 
 The module is based on the official Bitfocus module and keeps its action ids, so buttons made
@@ -57,16 +57,19 @@ Claude Code can install the skills as plugins straight from this repository:
    **CasparCG: Server (GreenCrew)**). Existing buttons are converted on the first start.
 3. Enter the server IP. The CasparCG media scanner must run for the clip and template lists.
 
-Tested with Companion 5.1.0 and CasparCG Server 2.5.1 on Linux. Companion 5.0.5 accepts the
-module API but has not been tested; see [ROADMAP.md](ROADMAP.md).
+Tested with Companion 5.1.0 and CasparCG Server 2.5.1 on Linux. The module uses module API 2.1, which
+Companion 5.0.0 and newer accept (5.0.x not tested yet, see [ROADMAP.md](ROADMAP.md)); Companion 4.x needs
+release 3.0.0-beta.3 (module API 1.14).
 
 What it adds to the official module:
 
 - **Fields instead of AMCP**: clip from the server list or typed, loop, seek, length, transitions
   including VFADE / FADECUT / CUTFADE / STING, tween and direction lists, mixer in percent,
   CG with fields, pause toggle, clear with transform reset. Input is checked before sending.
-- **Variables in every field**, including local button variables `$(local:name)`. The official
-  2.1.2 resolves them only in the raw command and sends local variables as `$NA`.
+- **Variables and expressions in every field**, including local button variables `$(local:name)`;
+  Companion resolves them (module API 2.1), and any field can be switched to an expression. The official
+  2.1.2 resolves variables only in the raw command, sends local variables as `$NA`, and on Companion 5.1 loses
+  expression mode.
 - **Live state** from `INFO <channel>` polling: tally (on air / cued), layer state, "ending soon",
   connection and command errors as feedbacks; per-layer variables such as
   `$(caspar:c1_l10_remaining)`.
@@ -165,12 +168,13 @@ These are server behaviours. The module works around the ones marked ✔; the re
 | OSC sends layer state every frame but no audio levels and no output state, so there is no VU meter from OSC |
 | On Linux the server needs a UTF-8 locale; otherwise non-ASCII media names break the AMCP connection |
 
-### This module (3.0.0-beta.3-by-GC)
+### This module (3.1.0-beta.1-by-GC)
 
 | Limit | Why / plan |
 | --- | --- |
 | State comes from `INFO` polling (default every 250 ms): tally, times and the skip position can be up to one interval old; "output is running" goes off ~1.5 s after a stop | OSC would be per frame, but 2.5.1 sends no output state over OSC ([ROADMAP](ROADMAP.md)) |
-| Module API `@companion-module/base` 1.14 (taken over from the official 2.1.2): Companion 5.1 resets expression mode in fields, and the module resolves variables itself | Move to API 2.1.x, which Companion 5.0.5 and 5.1 both accept (2.2 needs 5.1) - [ROADMAP](ROADMAP.md) |
+| Module API 2.1 (`@companion-module/base` 2.1.3): needs Companion 5.0 or newer; 2.2 features (preset notes, storing action results from presets) need Companion 5.1 | Stay on 2.1 while production runs Companion 5.0.x |
+| Fields that show or hide other fields (transition, source, output type...) cannot be expressions | Required by module API 2.x for visibility rules |
 | Ranges set by the module: opacity 0-100 %, volume 0-400 %, brightness / saturation / contrast 0-500 %, transitions and animations at most 15000 frames | Safety limits, not server limits; existing buttons beyond them stop with an error in the log |
 | NDI and DeckLink actions build the documented commands but were not tested with a source or card | Needs hardware |
 | Custom HTML graphics: scripts in the HTML are not run; fonts must be installed on the server or loaded by your CSS | By design (data URL host page) |

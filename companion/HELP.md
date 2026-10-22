@@ -9,7 +9,7 @@ Companion module that controls a CasparCG Server over AMCP (TCP 5250). GreenCrew
 - **Preset channel / layers** - presets are generated for this channel, clip layer and template layer.
 
 ### Actions
-Every field accepts variables, including **local button variables**: `$(local:name)`, `$(custom:x)`, `$(caspar:c1_l10_clip)`.
+Every field accepts variables, including **local button variables**: `$(local:name)`, `$(custom:x)`, `$(caspar:c1_l10_clip)`. Companion replaces them before the module runs the action, and any field can be switched to an **expression** (e.g. a layer `10 + $(local:n)`), except the dropdowns and checkboxes that show or hide other fields. Needs Companion 5.0 or newer.
 
 - **Play / Cue (LOADBG) / Load** - channel, layer, clip (list from the server or typed), loop, start frame (SEEK), length, transition (CUT, MIX, PUSH, SLIDE, WIPE, VFADE, FADECUT, CUTFADE, STING), duration in frames, tween, direction. *Auto* (start when the current clip ends) is only offered on Cue - on PLAY the server ignores it and plays at once.
   - *Reset transforms first* sends `MIXER ch-layer CLEAR` before the clip: transforms (FILL, OPACITY...) survive `CLEAR`, so a lower third that was slid out stays off-screen otherwise.

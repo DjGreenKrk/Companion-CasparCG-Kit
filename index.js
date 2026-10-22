@@ -1,4 +1,4 @@
-const { InstanceBase, runEntrypoint, TCPHelper, InstanceStatus, Regex } = require('@companion-module/base')
+const { InstanceBase, TCPHelper, InstanceStatus, Regex } = require('@companion-module/base')
 const { AmcpClient } = require('./src/amcp')
 const B = require('./src/build')
 const S = require('./src/state')
@@ -287,9 +287,9 @@ class CasparInstance extends InstanceBase {
 			this.varSig = sig
 			this.knownLayers = keys
 			this.knownOutputs = outKeys
-			this.setVariableDefinitions(
-				V.definitions(this.channels, [...keys].sort(sortLayers), [...outKeys].sort(sortLayers)),
-			)
+			// API 2.x takes an object { variableId: { name } }
+			const defs = V.definitions(this.channels, [...keys].sort(sortLayers), [...outKeys].sort(sortLayers))
+			this.setVariableDefinitions(Object.fromEntries(defs.map((d) => [d.variableId, { name: d.name }])))
 			this.values = {}
 		}
 		const values = {}
@@ -318,22 +318,24 @@ class CasparInstance extends InstanceBase {
 	updateDefinitions() {
 		this.actionDefs = actionDefinitions(this)
 		this.setActionDefinitions(this.actionDefs)
-		this.setFeedbackDefinitions(feedbackDefinitions(this))
-		this.setPresetDefinitions(presetDefinitions(this))
+		this.feedbackDefs = feedbackDefinitions(this)
+		this.setFeedbackDefinitions(this.feedbackDefs)
+		const { structure, presets } = presetDefinitions(this)
+		this.setPresetDefinitions(structure, presets)
 		this.varSig = null
 		this.publishState()
 	}
 
-	/** Replace $(...) variables, including local button variables, via the action/feedback context. */
-	async resolve(value, context) {
-		if (typeof value !== 'string' || !value.includes('$(')) return value
-		return context ? context.parseVariablesInString(value) : this.parseVariablesInString(value)
+	/**
+	 * With module API 2.x Companion replaces $(...) variables - local button variables included - in fields with
+	 * useVariables before the module sees the options, so values arrive ready. Kept as one place for that rule.
+	 */
+	async resolve(value) {
+		return value
 	}
 
-	async resolveOptions(options, context) {
-		const out = {}
-		for (const [k, v] of Object.entries(options || {})) out[k] = await this.resolve(v, context)
-		return out
+	async resolveOptions(options) {
+		return { ...(options || {}) }
 	}
 
 	/**
@@ -466,4 +468,6 @@ function sortLayers(a, b) {
 	return ac - bc || al - bl
 }
 
-runEntrypoint(CasparInstance, upgradeScripts)
+// module API 2.x: Companion imports the class (default export) and its UpgradeScripts
+module.exports = CasparInstance
+module.exports.UpgradeScripts = upgradeScripts
