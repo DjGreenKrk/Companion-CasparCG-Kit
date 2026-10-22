@@ -91,6 +91,18 @@ def main():
     manifest = json.loads((ROOT / "companion" / "manifest.json").read_text(encoding="utf-8"))
 
     skills, failed = [], False
+    req = package.get("kitRequirements") or {}
+    base = (package.get("dependencies") or {}).get("@companion-module/base", "")
+    # module API -> oldest Companion that accepts it (Companion shared-lib/lib/ModuleApiVersionCheck.ts)
+    api_min_companion = {"2.2": "5.1.0", "2.1": "5.0.0", "2.0": "5.0.0", "1.14": "4.2.0"}
+    api = re.search(r"(\d+\.\d+)", base)
+    need = api_min_companion.get(api.group(1)) if api else None
+    if not req.get("companion"):
+        print("ERROR package.json kitRequirements.companion is missing")
+        failed = True
+    elif need and tuple(map(int, req["companion"].split("."))) < tuple(map(int, need.split("."))):
+        print(f"ERROR kitRequirements.companion {req['companion']} is older than {need}, needed for module API {api.group(1)}")
+        failed = True
     for folder in sorted(p for p in SKILLS.iterdir() if (p / "SKILL.md").exists()):
         name, version, errors = check_skill(folder, marketplace)
         for e in errors:
@@ -123,6 +135,17 @@ def main():
 
     notes = [
         f"# Companion CasparCG Kit {release_version}",
+        "",
+        "## Requirements",
+        "",
+        "| | Needed | Tested with |",
+        "| --- | --- | --- |",
+        f"| Bitfocus Companion | **{req['companion']} or newer** (module API {api.group(1) if api else '?'}) | {req.get('companionTested', '')} |",
+        f"| CasparCG Server | **{req.get('casparcg', '')}.x** | {req.get('casparcgTested', '')} |",
+        "",
+        req.get("note", ""),
+        "",
+        "## Files",
         "",
         "| File | What it is | How to install |",
         "| --- | --- | --- |",

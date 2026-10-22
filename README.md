@@ -33,7 +33,8 @@ the original copyright notice are kept in [LICENSE](LICENSE). Branding: [BRANDIN
 ## Download
 
 Each release on the [releases page](https://github.com/DjGreenKrk/Companion-CasparCG-Kit/releases)
-has the whole kit and every part on its own:
+lists the Companion and CasparCG versions it needs at the top, and has the whole kit and every part on its own.
+The current module needs **Companion 5.1 or newer** and CasparCG Server 2.5.x:
 
 | File | Install |
 | --- | --- |
