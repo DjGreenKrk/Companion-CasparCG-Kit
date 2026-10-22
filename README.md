@@ -2,13 +2,16 @@
 
 ### GreenCrew module for Bitfocus Companion and AI skills for CasparCG playout
 
-[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE) [![CI](https://github.com/DjGreenKrk/Companion-CasparCG-Kit/actions/workflows/ci.yml/badge.svg)](https://github.com/DjGreenKrk/Companion-CasparCG-Kit/actions/workflows/ci.yml) [![Companion module checks](https://github.com/DjGreenKrk/Companion-CasparCG-Kit/actions/workflows/companion-checks.yml/badge.svg)](https://github.com/DjGreenKrk/Companion-CasparCG-Kit/actions/workflows/companion-checks.yml) [![Latest release](https://img.shields.io/github/v/release/DjGreenKrk/Companion-CasparCG-Kit?include_prereleases&label=release)](https://github.com/DjGreenKrk/Companion-CasparCG-Kit/releases) [![Release date](https://img.shields.io/github/release-date-pre/DjGreenKrk/Companion-CasparCG-Kit?label=released)](https://github.com/DjGreenKrk/Companion-CasparCG-Kit/releases) [![Last commit](https://img.shields.io/github/last-commit/DjGreenKrk/Companion-CasparCG-Kit)](https://github.com/DjGreenKrk/Companion-CasparCG-Kit/commits) [![Status: beta](https://img.shields.io/badge/status-beta-orange.svg)](ROADMAP.md)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE) [![CI](https://github.com/DjGreenKrk/Companion-CasparCG-Kit/actions/workflows/ci.yml/badge.svg)](https://github.com/DjGreenKrk/Companion-CasparCG-Kit/actions/workflows/ci.yml) [![Companion module checks](https://github.com/DjGreenKrk/Companion-CasparCG-Kit/actions/workflows/companion-checks.yml/badge.svg)](https://github.com/DjGreenKrk/Companion-CasparCG-Kit/actions/workflows/companion-checks.yml) [![Latest release](https://img.shields.io/github/v/release/DjGreenKrk/Companion-CasparCG-Kit?include_prereleases&label=release)](https://github.com/DjGreenKrk/Companion-CasparCG-Kit/releases) [![Release date](https://img.shields.io/github/release-date-pre/DjGreenKrk/Companion-CasparCG-Kit?label=released)](https://github.com/DjGreenKrk/Companion-CasparCG-Kit/releases) [![Last commit](https://img.shields.io/github/last-commit/DjGreenKrk/Companion-CasparCG-Kit)](https://github.com/DjGreenKrk/Companion-CasparCG-Kit/commits) [![Status: beta](https://img.shields.io/badge/status-beta-orange.svg)](ROADMAP.md) [![Tested on Companion 5.1.0](https://img.shields.io/badge/tested%20on-Companion%205.1.0-2ea44f.svg)](#known-limitations) [![Tested on CasparCG 2.5.1](https://img.shields.io/badge/tested%20on-CasparCG%202.5.1-2ea44f.svg)](#known-limitations)
 
 **Companion CasparCG Kit** is a Bitfocus Companion module that controls a CasparCG playout
 server, together with AI skills that write the buttons and the HTML graphics for it. Every
 action has its own fields (channel, layer, clip, transition, template data) instead of a raw AMCP
 line, every field takes Companion variables, and the buttons show what is on air. Made by
 GreenCrew, part of the GreenCrew Tools family.
+
+**Tested on Companion 5.1.0 with CasparCG Server 2.5.1** (Linux). Companion 5.0.x loads the module (same module
+API) but has not been tested with it yet.
 
 | Part | Version | What it does |
 | --- | --- | --- |
