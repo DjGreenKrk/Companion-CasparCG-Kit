@@ -86,3 +86,9 @@ test('outputs from INFO <channel>: number, path, running time', async () => {
 		703: { consumer: 'ffmpeg', path: 'rtmp://127.0.0.1/live/test', frames: 43, seconds: 1.72 },
 	})
 })
+
+test('a stream output without a frame counter is not running', () => {
+	assert.strictEqual(S.outputRunning({ consumer: 'ffmpeg', path: 'srt://x', frames: null, seconds: null }), false)
+	assert.strictEqual(S.outputRunning({ consumer: 'ffmpeg', path: 'a.mp4', frames: 0, seconds: 0 }), true)
+	assert.strictEqual(S.outputRunning(undefined), false)
+})

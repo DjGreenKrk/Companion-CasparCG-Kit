@@ -54,13 +54,13 @@ function definitions(channels, layerKeys, outputKeys = []) {
 }
 
 /** Variables of one output (consumer) added with an index, e.g. a recording on 1-700. */
-function outputValues(key, out) {
+function outputValues(key, out, running) {
 	const [c, n] = key.split('-')
 	const p = `c${c}_o${n}_`
 	return {
-		[p + 'active']: out ? 'yes' : 'no',
-		[p + 'time']: out?.seconds !== null && out?.seconds !== undefined ? mmss(out.seconds, { up: false }) : '',
-		[p + 'path']: out?.path ?? '',
+		[p + 'active']: running ? 'yes' : 'no',
+		[p + 'time']: running && out.seconds !== null ? mmss(out.seconds, { up: false }) : '',
+		[p + 'path']: running ? out.path : '',
 	}
 }
 

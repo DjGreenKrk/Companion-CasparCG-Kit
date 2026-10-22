@@ -112,7 +112,7 @@ module.exports = function feedbackDefinitions(self) {
 			callback: async (fb, context) => {
 				const ch = await self.resolve(fb.options.channel, context)
 				const n = await self.resolve(fb.options.index, context)
-				return !!self.outputAt(ch, n)
+				return self.outputRunning(ch, n)
 			},
 		},
 		connected: {

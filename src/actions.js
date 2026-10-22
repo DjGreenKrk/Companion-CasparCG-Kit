@@ -411,7 +411,7 @@ module.exports = function actionDefinitions(self) {
 		SEEK_REL: {
 			name: 'Skip forward / back (seconds)',
 			options: [F.channel(), F.layer(), F.number('seconds', 'Seconds (back: negative)', '10')],
-			callback: run((o) => B.seekRelative(o, self.framerateOf(o.channel))),
+			callback: run((o) => B.seekRelative(o, self.framerateOf(o.channel), self.layerAt(o.channel, o.layer)?.fg)),
 		},
 
 		OUTPUT_ADD: {
@@ -450,10 +450,10 @@ module.exports = function actionDefinitions(self) {
 						{ id: 'custom', label: 'Custom ffmpeg options' },
 					],
 				},
-				F.text('url', 'Address', 'srt://0.0.0.0:9000?mode=listener', {
+				F.text('url', 'Address', 'srt://192.168.0.10:9000?mode=caller', {
 					isVisible: (o) => o.kind === 'stream',
 					tooltip:
-						'srt://0.0.0.0:9000?mode=listener (receivers connect to the server), srt://host:port, rtmp://server/app/key',
+						'srt://receiver:port?mode=caller (the receiver listens - vMix, OBS, a decoder), rtmp://server/app/key. Listener mode (srt://0.0.0.0:9000?mode=listener) cannot be stopped until a receiver has connected (2.5.1).',
 				}),
 				{
 					type: 'dropdown',
@@ -469,6 +469,8 @@ module.exports = function actionDefinitions(self) {
 				},
 				F.text('args', 'Extra ffmpeg options (-name:stream form, e.g. -b:v 4000k)', '', {
 					isVisible: (o) => o.kind !== 'ndi',
+					tooltip:
+						'Test them before the show: on 2.5.1 an unknown codec made the server stop answering and crash (tested).',
 				}),
 				F.text('ndi_name', 'NDI name', 'CasparCG', { isVisible: (o) => o.kind === 'ndi' }),
 			],

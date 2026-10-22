@@ -13,6 +13,7 @@ Compared with the official documentation (old wiki, casparcg.com/docs, v2.5.1-st
 * [FEATURE] Outputs: `STREAM` (SRT) consumer, `IMAGE` snapshot, NDI out; queries `INFO PATHS` / `CONFIG`, `GL INFO`, `DIAG`, `NDI LIST`, thumbnail format (256×144 PNG)
 * [BUGFIX] `IMAGE` and `PRINT` save the picture from the previous snapshot - take two, use the second
 * [BUGFIX] `CALL` on a colour layer never answers
+* [BUGFIX] An unknown ffmpeg codec in `ADD … FILE` hangs and then crashes the server; an output number in use is replaced; an SRT output that never connected cannot be removed
 
 ## 2.0.0 — 2026-10-21
 

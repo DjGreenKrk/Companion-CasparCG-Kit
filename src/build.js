@@ -446,11 +446,22 @@ function pageCall(o) {
 	return `CALL ${addr} ${amcpString(js)}`
 }
 
-/** Skip forward / back by seconds, turned into channel frames (CALL ... SEEK REL counts channel frames, 2.5.1). */
-function seekRelative(o, framerate) {
+/**
+ * Skip forward / back by seconds, turned into channel frames (CALL ... SEEK REL counts channel frames, 2.5.1).
+ * Tested on 2.5.1: a skip before the start leaves the clip at a negative time and one past the end jumps to 0,
+ * so with a known position (fg from polling) the skip is kept inside the clip.
+ */
+function seekRelative(o, framerate, fg) {
 	const sec = num(o.seconds, 'Seconds')
 	if (!framerate) throw new Error('the channel frame rate is not known yet (not connected / not polled)')
-	return `CALL ${address(o.channel, o.layer, { layerRequired: true })} SEEK REL ${Math.round(sec * framerate)}`
+	const addr = address(o.channel, o.layer, { layerRequired: true })
+	const frames = Math.round(sec * framerate)
+	if (fg && fg.time !== null && fg.duration) {
+		const target = fg.time + sec
+		if (target <= 0) return `CALL ${addr} SEEK 0`
+		if (target >= fg.duration) return `CALL ${addr} SEEK END -1`
+	}
+	return `CALL ${addr} SEEK REL ${frames}`
 }
 
 // ------------------------------------------------------------------ outputs (consumers)

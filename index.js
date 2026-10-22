@@ -44,6 +44,7 @@ class CasparInstance extends InstanceBase {
 		this.paths = null
 		this.knownLayers = new Set()
 		this.knownOutputs = new Set()
+		this.outputProgress = new Map() // "ch-n" -> { frames, changedAt }
 		this.values = {}
 		this.lastErrorAt = 0
 		this.chain = Promise.resolve()
@@ -219,6 +220,7 @@ class CasparInstance extends InstanceBase {
 				.then(async (r) => {
 					if (r.ok && r.data[0]) {
 						this.state[channel] = await S.parseChannelInfo(r.data[0], this.paths)
+						this.trackOutputs(channel)
 					} else if (!r.noReply) {
 						this.state[channel] = { format: '', framerate: 0, layers: {} }
 					}
@@ -235,6 +237,28 @@ class CasparInstance extends InstanceBase {
 
 	outputAt(channel, index) {
 		return this.state[parseInt(channel, 10)]?.outputs?.[parseInt(index, 10)]
+	}
+
+	/** Remember when each output's frame counter last moved (see outputRunning). */
+	trackOutputs(channel) {
+		const now = Date.now()
+		for (const [n, out] of Object.entries(this.state[channel]?.outputs || {})) {
+			const key = `${channel}-${n}`
+			const p = this.outputProgress.get(key)
+			if (!p || p.frames !== out.frames) this.outputProgress.set(key, { frames: out.frames, changedAt: now })
+		}
+	}
+
+	/**
+	 * Tested on 2.5.1: a stream output stays in INFO after REMOVE with its frame counter frozen, and one that never
+	 * connected has no counter. So an output runs only while its counter moves.
+	 */
+	outputRunning(channel, index) {
+		const out = this.outputAt(channel, index)
+		if (!S.outputRunning(out)) return false
+		const p = this.outputProgress.get(`${parseInt(channel, 10)}-${parseInt(index, 10)}`)
+		const ms = Math.max(1500, 4 * (Number(this.config.poll_interval) || 250))
+		return !!p && Date.now() - p.changedAt < ms
 	}
 
 	framerateOf(channel) {
@@ -277,7 +301,7 @@ class CasparInstance extends InstanceBase {
 		}
 		for (const key of outKeys) {
 			const [c, n] = key.split('-')
-			Object.assign(values, V.outputValues(key, this.outputAt(c, n)))
+			Object.assign(values, V.outputValues(key, this.outputAt(c, n), this.outputRunning(c, n)))
 		}
 		const changed = {}
 		for (const [k, v] of Object.entries(values)) {

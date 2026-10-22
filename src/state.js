@@ -165,7 +165,16 @@ function parseChannelList(lines) {
 	return out
 }
 
+/**
+ * An output counts as running only while it reports a frame counter: on 2.5.1 a stream that never connected
+ * (SRT listener nobody joined, caller with no listener) stays listed after REMOVE, without <frame> (tested).
+ */
+function outputRunning(out) {
+	return !!out && out.frames !== null
+}
+
 module.exports = {
+	outputRunning,
 	parseChannelInfo,
 	parsePaths,
 	layerState,

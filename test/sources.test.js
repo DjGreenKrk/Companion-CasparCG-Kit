@@ -117,6 +117,10 @@ test('web page call and reload, skip by seconds in channel frames', () => {
 	assert.strictEqual(B.seekRelative({ ...at, seconds: '-10' }, 50), 'CALL 1-10 SEEK REL -500')
 	assert.strictEqual(B.seekRelative({ ...at, seconds: '2,5' }, 25), 'CALL 1-10 SEEK REL 63')
 	assert.throws(() => B.seekRelative({ ...at, seconds: '10' }, 0), /frame rate/)
+	const fg = { time: 4, duration: 10 }
+	assert.strictEqual(B.seekRelative({ ...at, seconds: '-10' }, 50, fg), 'CALL 1-10 SEEK 0')
+	assert.strictEqual(B.seekRelative({ ...at, seconds: '10' }, 50, fg), 'CALL 1-10 SEEK END -1')
+	assert.strictEqual(B.seekRelative({ ...at, seconds: '-2' }, 50, fg), 'CALL 1-10 SEEK REL -100')
 })
 
 test('outputs: record presets, date in the name, stream, NDI, remove, snapshot twice', () => {
