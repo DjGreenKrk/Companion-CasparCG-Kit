@@ -33,9 +33,10 @@ jobs:
             *) echo "::error::runtime.type '$runtime' is not node18 / node22 / node26"; exit 1 ;;
           esac
       - run: corepack enable
+      # @companion-module/tools 3 builds on Node 22 (engines ^22.18); the module itself runs on the manifest runtime
       - uses: actions/setup-node@v4
         with:
-          node-version: ${{ steps.node.outputs.version }}
+          node-version: '22'
 
       - name: Yarn, not npm
         run: |
@@ -79,6 +80,11 @@ jobs:
       - name: Build and package
         run: yarn companion-module-build --output=pkg
 
+      - name: Node.js of the module runtime
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ steps.node.outputs.version }}
+
       - name: The built module loads the way Companion loads it
         timeout-minutes: 1
         run: |
@@ -91,7 +97,7 @@ jobs:
             const fail = (msg) => { console.log('::error::' + msg); process.exit(1) }
             if (typeof m.default !== 'function') fail('main.js has no default-exported class')
             if (!Array.isArray(m.UpgradeScripts)) fail('main.js has no UpgradeScripts array')
-            console.log('module loads: class ' + m.default.name + ', ' + m.UpgradeScripts.length + ' upgrade script(s)')
+            console.log('module loads on Node ' + process.version + ': ' + m.UpgradeScripts.length + ' upgrade script(s)')
           "
           node -e "
             const m = require('./${dir}companion/manifest.json')
