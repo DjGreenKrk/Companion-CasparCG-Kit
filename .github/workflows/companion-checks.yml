@@ -70,7 +70,7 @@ jobs:
 
       - name: '@companion-module/tools is new enough'
         run: |
-          installed=$(node -p "require('@companion-module/tools/package.json').version")
+          installed=$(node -p "JSON.parse(require('fs').readFileSync('node_modules/@companion-module/tools/package.json')).version")
           major=${installed%%.*}
           if [ "$major" -le 2 ]; then floor=2.8.0; elif [ "$major" -eq 3 ]; then floor=3.1.0; else floor=$installed; fi
           lowest=$(printf '%s\n%s\n' "$installed" "$floor" | sort -V | head -n1)
