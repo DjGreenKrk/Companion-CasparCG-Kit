@@ -162,3 +162,38 @@ test('outputs: record presets, date in the name, stream, NDI, remove, snapshot t
 		{ cmd: 'ADD 1 IMAGE "snap_080509"', after: 500, key: 'snapshot-1' },
 	])
 })
+
+test('limits and name traps found on 2.5.1', () => {
+	const base = { channel: '1', layer: '10', transition: 'CUT' }
+	// a transition word in the file name is neutralised with CUT 0; a chosen transition still wins
+	assert.deepStrictEqual(B.playLike('PLAY', { ...base, clip_dd: 'PROMO MIX 2024' }), [
+		'PLAY 1-10 "PROMO MIX 2024" CUT 0',
+	])
+	assert.deepStrictEqual(B.playLike('PLAY', { ...base, clip_dd: 'FINAL CUT' }), ['PLAY 1-10 "FINAL CUT"'])
+	assert.deepStrictEqual(
+		B.playLike('PLAY', { ...base, clip_dd: 'PROMO MIX 2024', transition: 'MIX', transition_duration: '10' }),
+		['PLAY 1-10 "PROMO MIX 2024" MIX 10 linear'],
+	)
+	assert.strictEqual(
+		B.scrollPlay({ ...base, clip_dd: 'CREDITS WIPE 3', mode: 'speed', value: '4' }),
+		'PLAY 1-10 "CREDITS WIPE 3" SPEED 4 CUT 0',
+	)
+	// clip names that the server reads as colours
+	assert.throws(() => B.playLike('PLAY', { ...base, clip_dd: 'RED' }), /colour name/)
+	assert.throws(() => B.playLike('PLAY', { ...base, clip: '#FF0000' }), /colour name/)
+	assert.deepStrictEqual(B.playLike('PLAY', { ...base, clip: 'red.mp4' }), ['PLAY 1-10 "red.mp4"'])
+	assert.deepStrictEqual(B.playLike('PLAY', { ...base, clip: 'LOGOS/RED' }), ['PLAY 1-10 "LOGOS/RED"'])
+	// mixer ranges and durations
+	assert.throws(() => B.mixerProp({ ...base, property: 'VOLUME', value: '10000' }), /0-400 %/)
+	assert.throws(() => B.mixerProp({ ...base, property: 'OPACITY', value: '150' }), /0-100 %/)
+	assert.strictEqual(B.mixerProp({ ...base, property: 'VOLUME', value: '200' }), 'MIXER 1-10 VOLUME 2')
+	assert.throws(() => B.masterVolume({ channel: '1', value: '1000' }), /0-400 %/)
+	assert.throws(
+		() => B.mixerFill({ ...base, x: '0', y: '0', sx: '100', sy: '100', duration: '99999' }),
+		/at most 15000/,
+	)
+	assert.throws(
+		() => B.playLike('PLAY', { ...base, clip_dd: 'X', transition: 'MIX', transition_duration: '99999' }),
+		/at most 15000/,
+	)
+})

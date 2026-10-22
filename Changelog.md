@@ -1,3 +1,14 @@
+# Companion CasparCG Kit 3.0.0-beta.3
+
+Limits found by testing CasparCG Server 2.5.1 with wrong and unusual input: where the server answers OK but does something else, the module now stops or corrects the command.
+
+* [BUGFIX] Layer numbers above 2147483647 are refused (the server plays them on layer 0)
+* [BUGFIX] A file name with a transition word and a number ("promo MIX 2024") no longer starts a transition: `CUT 0` is added when no transition is chosen
+* [BUGFIX] A clip called like a colour (RED, #FF0000) is refused with a hint to type the extension (the server would play the colour)
+* [CHANGE] Mixer values are checked: opacity 0-100 %, volume and master volume 0-400 % (+12 dB), brightness / saturation / contrast 0-500 %; transitions and animations at most 15000 frames
+* [CHANGE] The log notes when the server will use `<clip>_A` / `<clip>_ALPHA` as the key of a clip
+* [FEATURE] Skill **casparcg-amcp-button-builder 2.2.0**: limits, file names and formats measured on 2.5.1
+
 # Companion CasparCG Kit 3.0.0-beta.2
 
 Features from the CasparCG documentation and source that the module did not cover yet, each checked on CasparCG Server 2.5.1.

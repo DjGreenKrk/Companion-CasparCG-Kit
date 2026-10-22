@@ -9,6 +9,20 @@ module.exports = function actionDefinitions(self) {
 	/** Wrap a builder: resolve variables (local + global) in order, build, send. */
 	const run = (build) => (action, context) => self.runOrdered(action, context, build)
 
+	/** The server pairs <clip> with <clip>_A or <clip>_ALPHA from the media folder as its key (tested on 2.5.1). */
+	const keyNote = (o) => {
+		const clip = B.str(o.clip) || B.str(o.clip_dd)
+		const up = clip.toUpperCase().replace(/\\/g, '/')
+		const key = self.media.find((m) => m.name === `${up}_A` || m.name === `${up}_ALPHA`)
+		if (key)
+			self.log('info', `${clip}: the server also uses ${key.name} as its key (alpha mask) - rename it if not intended`)
+	}
+	const playRun = (verb) =>
+		run((o) => {
+			keyNote(o)
+			return B.playLike(verb, o)
+		})
+
 	const learnClip = async (action) => {
 		const st = self.layerAt(action.options.channel, action.options.layer)
 		if (!st?.fg?.name) return undefined
@@ -38,20 +52,20 @@ module.exports = function actionDefinitions(self) {
 			name: 'Play clip (PLAY)',
 			description: 'Play a clip on a layer. Leave the clip empty to start what is loaded in the background.',
 			options: playOptions('PLAY'),
-			callback: run((o) => B.playLike('PLAY', o)),
+			callback: playRun('PLAY'),
 			learn: learnClip,
 		},
 		LOADBG: {
 			name: 'Cue clip in background (LOADBG)',
 			description: 'Load a clip in the background; start it with PLAY (empty clip) or AUTO.',
 			options: playOptions('LOADBG'),
-			callback: run((o) => B.playLike('LOADBG', o)),
+			callback: playRun('LOADBG'),
 			learn: learnClip,
 		},
 		LOAD: {
 			name: 'Load clip, show first frame (LOAD)',
 			options: playOptions('LOAD'),
-			callback: run((o) => B.playLike('LOAD', o)),
+			callback: playRun('LOAD'),
 			learn: learnClip,
 		},
 		PAUSE: { name: 'Pause (PAUSE)', options: layerOnly(), callback: run((o) => B.simple('PAUSE', o)) },

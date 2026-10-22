@@ -4,7 +4,7 @@ Target: CasparCG Server 2.5.x (latest stable 2.5.1). The wiki below is written f
 
 Source: the CasparCG AMCP Protocol wiki page plus the server source v2.5.1-stable (tween table, transition and STING parsers, AMCP protocol strategy, `MIXER CLEAR` handler). Items marked **tested on 2.5.1** were measured on a real 2.5.1 server (replies captured byte by byte, picture and audio verified from channel recordings). The wiki says it is unmaintained and may not match versions newer than 2.0.x, so treat unmarked version-specific details as "verify on your server".
 
-Conventions: `[name:type]` required, `{...}` optional, `|` alternatives. Commands are case-insensitive. Quote parameters containing spaces with `"` (escapes: `\"`, `\\`, `\n`). Each command ends with CR LF. Layer address `ch-layer`; no layer = 0 for play/load/mixer, "whole channel" for CLEAR. Layers are created on first use and can be any number from 0 to 2147483647 (tested on 2.5.1: 500 layers at once, and layer 2147483647, work); higher layers are drawn on top. **A wrong layer number is not rejected**: `PLAY 3--5`, `PLAY 3-2147483648`, `PLAY 3-abc`, `PLAY 3-10x` all answer `202 PLAY OK` and play on **layer 0** (the bottom), replacing whatever is there - check variables that build the address. A channel that is not in the config → `400 ERROR`.
+Conventions: `[name:type]` required, `{...}` optional, `|` alternatives. Commands are case-insensitive. Quote parameters containing spaces with `"` (escapes: `\"`, `\\`, `\n`). Each command ends with CR LF. Layer address `ch-layer`; no layer = 0 for play/load/mixer, "whole channel" for CLEAR. Layers are created on first use and can be any number from 0 to 2147483647 (tested on 2.5.1: 500 layers at once, and layer 2147483647, work); higher layers are drawn on top. **A wrong layer number is not rejected** - it plays on layer 0; see "Limits, file names and formats" below.
 
 ## Playback
 
@@ -204,6 +204,30 @@ Without any configuration the server sends OSC to **every AMCP client's IP on UD
 /channel/1/stage/layer/10/background/producer       "empty" | "ffmpeg" ...
 ```
 Only active layers are sent. **Not sent on 2.5.1**: audio levels (`/mixer/audio/…` - the source fills them, but nothing arrives) and consumer state (`/output/…`), so OSC gives no VU meter.
+
+## Limits, file names and formats - tested on 2.5.1
+
+**Where the server says OK but does something else** (check these first when "nothing happens" or "the wrong thing plays"):
+
+| Input | Reply | What happens |
+|---|---|---|
+| Wrong layer: `3--5`, `3-2147483648`, `3-abc`, `3-10x` | `202` | plays on **layer 0** (bottom). Valid layers: 0-2147483647 |
+| Wrong channel: `0-10`, `-1-10`, `3a-10`, missing channel | `400 ERROR` | nothing (channels are checked, layers are not) |
+| A transition word with a number **in the file name** (`"promo MIX 2024"`) | `202` | plays with a 2024-frame MIX: the parser searches the whole line and takes the last match. Add `CUT 0` at the end (verified; LOOP / AUTO still work) or rename the file. `final CUT 2` is harmless |
+| A clip named like a colour (`RED`, `BLUE`, `#FF0000`…) | `202` | plays the colour; the file only with its extension (`PLAY 1-10 "red.mp4"`) or in a subfolder |
+| `<name>_A` or `<name>_ALPHA` next to `<name>` | `202` | the server uses it as the key (alpha mask) of `<name>` automatically (producer `separated`) - wanted for fill+key pairs, a trap for `belka.png` + `belka_a.png` |
+| Same name, different extensions (`audio.mp3`, `audio.wav`…) | `202` | `CLS` lists one entry; `PLAY audio` takes whichever file the folder lists first (opus, png before mp4…). Give the extension to choose |
+| Broken, empty or truncated file | `202` | plays nothing (transparent); `CLS` does not list it |
+| Transition `MIX -5`, `MIX 2.5` | `202` | plain cut (not matched). `MIX 0` = cut; `MIX 99999` accepted (33 min); `MIX 99999999999` → `402` |
+| `SEEK 4294967295` / `SEEK 4294967296` / `SEEK 1.5` | `202` / `403` / `403` | the first sets an absurd time; `LENGTH 0` plays nothing |
+| `MIXER … OPACITY 5`, `-1`, `nan`, `inf`; `VOLUME 100` (+40 dB); `MASTERVOLUME 10`; `FILL 0 0 1000 1000`; `ROTATION 100000` | `202` | all applied - no range check on the server. A negative duration (`OPACITY 0.5 -10`) is `202` and **not applied** |
+
+**Sizes:** `CG UPDATE` and `CG INVOKE` carry 1 MB of data in one command (130 ms), `PING` with 1 MB answers. `PLAY [HTML] "data:…"` works up to **4067 characters** of URL (with the 20-character media path ≈ 4096, the path limit - on Windows it may be much lower, not tested). Image 8000×8000 PNG: the 4 GB / no-GPU test server stopped responding for 15 min - keep stills at channel resolution.
+
+**Video formats that play** (1080p25 channel, picture and running time checked): H.264 8-bit / 10-bit / 4:2:2, HEVC 8 / 10-bit, AV1, VP9, ProRes 422 / 4444, DNxHD, CineForm, HAP, FFV1, MJPEG (avi), MPEG-2 (ts), 4K (scaled down), portrait 1080×1920 and SD 720×576 (stretched to the frame - use `SCALE_MODE` / `MIXER FILL`), 25 / 29.97 / 50 / 60 fps and 1080i on a 25p channel, variable frame rate. **Alpha in video is taken as premultiplied**: a ProRes 4444 or VP9 file with straight (unmatted) alpha shows colour where it should be transparent - export "premultiplied with black". PNG alpha is straight and correct.
+**Audio-only files** play with a transparent picture: mp3, wav (24-bit, 96 kHz, 5.1), flac, m4a, opus; AC-3 and 8-channel audio inside video load too.
+**Stills** (image producer): `.png .jpg .jpeg .bmp .tga .tif .tiff .webp .gif .jp2 .jpx .j2k .j2c`; GIF shows only the first frame, animated WebP shows nothing, SVG goes to ffmpeg (no vector rendering - convert to PNG), PSD / HEIC / EXR are not supported.
+**File names** that work: spaces, Polish letters, emoji, apostrophe, `#` at the start, dots, upper-case extension, 200+ characters (Linux server with a UTF-8 locale).
 
 ## Response codes
 Meaning per the protocol: 100 info event · 101 event, one data line · 200 ok, multi-line data (ends with an empty line) · 201 ok, one data line · 202 ok, no data · 400 command not understood · 401 illegal channel · 402 missing parameter · 403 illegal parameter · 404 media not found · 500/501 server error · 502 media unreadable · 503 access error.

@@ -3,9 +3,11 @@
 Version in `SKILL.md` (`metadata.version`). Major: advice replaced or removed; minor: new tested
 facts or sections; patch: wording and corrections without changing advice.
 
-## 2.1.1 — 2026-10-22
+## 2.2.0 — 2026-10-22
 
+* [FEATURE] Section "Limits, file names and formats": what the server accepts with `202` but does differently, data sizes, video / audio / still formats that play, file names that work
 * [BUGFIX] A wrong layer number (negative, above 2147483647, with letters) is answered `202` and plays on layer 0; layer range and count measured
+* [BUGFIX] A transition word with a number in a file name starts a transition; clips named like colours play the colour; `<name>_A` / `_ALPHA` files become the key automatically; video alpha must be premultiplied
 
 ## 2.1.0 — 2026-10-22
 

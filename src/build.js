@@ -17,6 +17,21 @@ const DIRECTIONAL = new Set(['PUSH', 'SLIDE', 'WIPE'])
 const DIRECTIONS = ['', 'RIGHT', 'LEFT', 'DOWN', 'UP']
 
 const MIXER_PROPS = ['OPACITY', 'VOLUME', 'BRIGHTNESS', 'SATURATION', 'CONTRAST']
+// sensible ranges in percent; the server takes anything (VOLUME 100 = +40 dB, nan, inf - tested on 2.5.1)
+const MIXER_RANGES = {
+	OPACITY: [0, 100],
+	VOLUME: [0, 400],
+	BRIGHTNESS: [0, 500],
+	SATURATION: [0, 500],
+	CONTRAST: [0, 500],
+}
+// longest transition / animation accepted: 5 minutes at 50 fps (the server takes MIX 99999 = 33 minutes)
+const MAX_FRAMES = 15000
+
+// The server reads a transition anywhere in the line, file names included ("promo MIX 2024" plays with a
+// 2024-frame mix, tested on 2.5.1). With no transition chosen, CUT 0 at the end makes it a plain cut again.
+const TRANSITION_WORD = /\b(VFADE|FADECUT|CUTFADE|CUT|PUSH|SLIDE|WIPE|MIX)\s+\d+/i
+const guardCut = (text) => (TRANSITION_WORD.test(text) ? 'CUT 0' : '')
 
 const str = (v) => (v === undefined || v === null ? '' : String(v).trim())
 const truthy = (v) => v === true || v === 'true' || v === 1 || v === '1'
@@ -104,7 +119,7 @@ function transition(o) {
 		if (afd) parts.push(`AUDIO_FADE_DURATION=${afd}`)
 		return `STING (${parts.join(' ')})`
 	}
-	const dur = int(o.transition_duration, 'Transition duration (frames)', { optional: true }) ?? 0
+	const dur = int(o.transition_duration, 'Transition duration (frames)', { optional: true, max: MAX_FRAMES }) ?? 0
 	let out = `${type} ${dur} ${tween(o.transition_tween)}`
 	const dir = str(o.direction).toUpperCase()
 	if (dir) {
@@ -124,7 +139,7 @@ function playLike(verb, o) {
 	const addr = address(o.channel, o.layer)
 	const clip = str(o.clip) || str(o.clip_dd)
 	const parts = [verb, addr]
-	if (clip) parts.push(quote(clip))
+	if (clip) parts.push(quote(colourSafe(clip)))
 	else if (verb !== 'PLAY') throw new Error(`${verb} needs a clip`)
 	if (truthy(o.loop)) parts.push('LOOP')
 	const seek = int(o.seek, 'Seek (frames)', { optional: true })
@@ -133,13 +148,21 @@ function playLike(verb, o) {
 	if (length) parts.push(`LENGTH ${length}`)
 	if (verb === 'LOADBG' && truthy(o.auto)) parts.push('AUTO')
 	if (clip) {
-		const t = transition(o)
+		const t = transition(o) || guardCut(clip)
 		if (t) parts.push(t)
 	}
 	const lines = []
 	if (truthy(o.clear_mixer)) lines.push(`MIXER ${address(o.channel, o.layer, { layerRequired: true })} CLEAR`)
 	lines.push(parts.join(' '))
 	return lines
+}
+
+/** A clip called like a colour (RED, #FF0000) would play the colour instead (tested on 2.5.1). */
+function colourSafe(clip) {
+	const s = str(clip)
+	if (COLOR_NAMES.includes(s.toUpperCase()) || /^#([0-9a-f]{6}|[0-9a-f]{8})$/i.test(s))
+		throw new Error(`"${s}" is a colour name for the server - type the file name with its extension (e.g. ${s}.mp4)`)
+	return s
 }
 
 function simple(verb, o, { layerRequired = false } = {}) {
@@ -162,7 +185,7 @@ function callParam(o) {
 
 function mixerTail(o) {
 	let out = ''
-	const dur = int(o.duration, 'Duration (frames)', { optional: true }) ?? 0
+	const dur = int(o.duration, 'Duration (frames)', { optional: true, max: MAX_FRAMES }) ?? 0
 	if (dur > 0) out += ` ${dur} ${tween(o.tween)}`
 	if (truthy(o.defer)) out += ' DEFER'
 	return out
@@ -171,7 +194,10 @@ function mixerTail(o) {
 function mixerProp(o) {
 	const prop = str(o.property).toUpperCase()
 	if (!MIXER_PROPS.includes(prop)) throw new Error(`Unknown mixer property "${prop}"`)
-	const v = num(o.value, `${prop} (%)`) / 100
+	const pct = num(o.value, `${prop} (%)`)
+	const [lo, hi] = MIXER_RANGES[prop]
+	if (pct < lo || pct > hi) throw new Error(`${prop} must be ${lo}-${hi} %, got ${pct}`)
+	const v = pct / 100
 	// MIXER 1 VOLUME without a layer only touches layer 0, so a layer is required
 	return `MIXER ${address(o.channel, o.layer, { layerRequired: true })} ${prop} ${fmt(v)}${mixerTail(o)}`
 }
@@ -182,7 +208,9 @@ function mixerFill(o) {
 }
 
 function masterVolume(o) {
-	const v = num(o.value, 'Master volume (%)') / 100
+	const pct = num(o.value, 'Master volume (%)')
+	if (pct < 0 || pct > 400) throw new Error(`Master volume must be 0-400 %, got ${pct}`)
+	const v = pct / 100
 	return `MIXER ${int(o.channel, 'Channel', { min: 1 })} MASTERVOLUME ${fmt(v)}${mixerTail(o)}`
 }
 
@@ -404,9 +432,10 @@ function sourceSpec(o) {
 function playSource(o) {
 	const verb = str(o.verb).toUpperCase() || 'PLAY'
 	if (!['PLAY', 'LOADBG'].includes(verb)) throw new Error(`Unknown command "${verb}"`)
-	const parts = [verb, address(o.channel, o.layer, { layerRequired: true }), sourceSpec(o)]
+	const spec = sourceSpec(o)
+	const parts = [verb, address(o.channel, o.layer, { layerRequired: true }), spec]
 	if (verb === 'LOADBG' && truthy(o.auto)) parts.push('AUTO')
-	const t = transition({ ...o, transition: o.transition === 'STING' ? 'CUT' : o.transition })
+	const t = transition({ ...o, transition: o.transition === 'STING' ? 'CUT' : o.transition }) || guardCut(spec)
 	if (t) parts.push(t)
 	return parts.join(' ')
 }
@@ -415,7 +444,7 @@ function playSource(o) {
 function scrollPlay(o) {
 	const clip = str(o.clip) || str(o.clip_dd)
 	if (!clip) throw new Error('Scroll needs an image')
-	const parts = ['PLAY', address(o.channel, o.layer, { layerRequired: true }), quote(clip)]
+	const parts = ['PLAY', address(o.channel, o.layer, { layerRequired: true }), quote(colourSafe(clip))]
 	if (str(o.mode) === 'duration') {
 		const d = num(o.value, 'Duration (s)')
 		if (d <= 0) throw new Error('Duration must be more than 0 s')
@@ -428,7 +457,7 @@ function scrollPlay(o) {
 	const blur = int(o.blur, 'Motion blur (px)', { optional: true })
 	if (blur) parts.push(`BLUR ${blur}`)
 	if (truthy(o.premultiply)) parts.push('PREMULTIPLY')
-	const t = transition({ ...o, transition: o.transition === 'STING' ? 'CUT' : o.transition })
+	const t = transition({ ...o, transition: o.transition === 'STING' ? 'CUT' : o.transition }) || guardCut(clip)
 	if (t) parts.push(t)
 	return parts.join(' ')
 }
@@ -436,7 +465,7 @@ function scrollPlay(o) {
 function scrollSpeed(o) {
 	const s = num(o.value, 'Speed (px per frame)')
 	let out = `CALL ${address(o.channel, o.layer, { layerRequired: true })} SPEED ${fmt(s)}`
-	const dur = int(o.duration, 'Duration (frames)', { optional: true }) ?? 0
+	const dur = int(o.duration, 'Duration (frames)', { optional: true, max: MAX_FRAMES }) ?? 0
 	if (dur > 0) out += ` ${dur} ${tween(o.tween)}`
 	return out
 }
@@ -547,6 +576,8 @@ module.exports = {
 	TRANSITIONS,
 	DIRECTIONS,
 	MIXER_PROPS,
+	MIXER_RANGES,
+	MAX_FRAMES,
 	CALL_PARAMS,
 	str,
 	truthy,
