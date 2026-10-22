@@ -167,7 +167,7 @@ These are server behaviours. The module works around the ones marked ✔; the re
 | Limit | Why / plan |
 | --- | --- |
 | State comes from `INFO` polling (default every 250 ms): tally, times and the skip position can be up to one interval old; "output is running" goes off ~1.5 s after a stop | OSC would be per frame, but 2.5.1 sends no output state over OSC ([ROADMAP](ROADMAP.md)) |
-| Module API `@companion-module/base` 1.14: Companion 5.1 resets expression mode in fields | API 2.x once production moves past Companion 5.0 |
+| Module API `@companion-module/base` 1.14 (taken over from the official 2.1.2): Companion 5.1 resets expression mode in fields, and the module resolves variables itself | Move to API 2.1.x, which Companion 5.0.5 and 5.1 both accept (2.2 needs 5.1) - [ROADMAP](ROADMAP.md) |
 | Ranges set by the module: opacity 0-100 %, volume 0-400 %, brightness / saturation / contrast 0-500 %, transitions and animations at most 15000 frames | Safety limits, not server limits; existing buttons beyond them stop with an error in the log |
 | NDI and DeckLink actions build the documented commands but were not tested with a source or card | Needs hardware |
 | Custom HTML graphics: scripts in the HTML are not run; fonts must be installed on the server or loaded by your CSS | By design (data URL host page) |
