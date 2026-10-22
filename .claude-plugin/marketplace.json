@@ -10,7 +10,7 @@
     {
       "name": "casparcg-amcp-button-builder",
       "description": "Writes, reviews and debugs CasparCG AMCP commands and the Bitfocus Companion buttons that send them (lower thirds, stingers, intros, transitions, mixer, templates), with facts tested on CasparCG 2.5.1.",
-      "version": "2.1.0",
+      "version": "2.1.1",
       "author": {
         "name": "Julian Szymański / GreenCrew",
         "url": "https://greencrew.pl"

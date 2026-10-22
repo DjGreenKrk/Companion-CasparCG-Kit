@@ -13,7 +13,7 @@ GreenCrew, part of the GreenCrew Tools family.
 | Part | Version | What it does |
 | --- | --- | --- |
 | Companion module (`companion/`, `src/`) | 3.0.0-beta.2-by-GC | Controls CasparCG Server from Companion |
-| Skill [casparcg-amcp-button-builder](skills/casparcg-amcp-button-builder/) | 2.1.0 | Writes, reviews and debugs AMCP commands and the Companion buttons that send them |
+| Skill [casparcg-amcp-button-builder](skills/casparcg-amcp-button-builder/) | 2.1.1 | Writes, reviews and debugs AMCP commands and the Companion buttons that send them |
 | Skill [event-lower-third-generator](skills/event-lower-third-generator/) | 0.1.0 | Generates HTML lower thirds and event graphics (speaker, timer, ticker…) from client materials |
 
 The module is based on the official Bitfocus module and keeps its action ids, so buttons made

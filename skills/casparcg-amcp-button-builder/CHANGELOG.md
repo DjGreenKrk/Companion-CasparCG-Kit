@@ -3,6 +3,10 @@
 Version in `SKILL.md` (`metadata.version`). Major: advice replaced or removed; minor: new tested
 facts or sections; patch: wording and corrections without changing advice.
 
+## 2.1.1 — 2026-10-22
+
+* [BUGFIX] A wrong layer number (negative, above 2147483647, with letters) is answered `202` and plays on layer 0; layer range and count measured
+
 ## 2.1.0 — 2026-10-22
 
 Compared with the official documentation (old wiki, casparcg.com/docs, v2.5.1-stable source) and measured on 2.5.1 what it leaves out.

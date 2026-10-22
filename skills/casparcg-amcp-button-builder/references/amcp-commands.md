@@ -4,7 +4,7 @@ Target: CasparCG Server 2.5.x (latest stable 2.5.1). The wiki below is written f
 
 Source: the CasparCG AMCP Protocol wiki page plus the server source v2.5.1-stable (tween table, transition and STING parsers, AMCP protocol strategy, `MIXER CLEAR` handler). Items marked **tested on 2.5.1** were measured on a real 2.5.1 server (replies captured byte by byte, picture and audio verified from channel recordings). The wiki says it is unmaintained and may not match versions newer than 2.0.x, so treat unmarked version-specific details as "verify on your server".
 
-Conventions: `[name:type]` required, `{...}` optional, `|` alternatives. Commands are case-insensitive. Quote parameters containing spaces with `"` (escapes: `\"`, `\\`, `\n`). Each command ends with CR LF. Layer address `ch-layer`; no layer = 0 for play/load/mixer, "whole channel" for CLEAR.
+Conventions: `[name:type]` required, `{...}` optional, `|` alternatives. Commands are case-insensitive. Quote parameters containing spaces with `"` (escapes: `\"`, `\\`, `\n`). Each command ends with CR LF. Layer address `ch-layer`; no layer = 0 for play/load/mixer, "whole channel" for CLEAR. Layers are created on first use and can be any number from 0 to 2147483647 (tested on 2.5.1: 500 layers at once, and layer 2147483647, work); higher layers are drawn on top. **A wrong layer number is not rejected**: `PLAY 3--5`, `PLAY 3-2147483648`, `PLAY 3-abc`, `PLAY 3-10x` all answer `202 PLAY OK` and play on **layer 0** (the bottom), replacing whatever is there - check variables that build the address. A channel that is not in the config → `400 ERROR`.
 
 ## Playback
 

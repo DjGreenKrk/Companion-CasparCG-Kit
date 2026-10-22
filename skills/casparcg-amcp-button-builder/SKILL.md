@@ -2,7 +2,7 @@
 name: casparcg-amcp-button-builder
 description: Write, review and debug CasparCG server commands (AMCP) and the Bitfocus Companion buttons that send them - lower thirds ("belki"), intro videos, stingers, timers, looped ad breaks, transitions (MIX/PUSH/WIPE/SLIDE/STING), MIXER commands (FILL, VOLUME, OPACITY, CLEAR), colour / gradient / scrolling-credits / web-page / SRT and NDI sources, recording and streaming outputs, OSC live state, layer/channel planning, casparcg.config, and audio loudness matching of media files. Use whenever the user mentions CasparCG, Caspar, AMCP, "PLAY 1-10", stinger, belka, a Companion config / .companionconfig with caspar actions, or media that plays out of a CasparCG media folder, even if they don't say "AMCP".
 metadata:
-  version: "2.1.0"
+  version: "2.1.1"
   author: Julian Szymański / GreenCrew
 ---
 

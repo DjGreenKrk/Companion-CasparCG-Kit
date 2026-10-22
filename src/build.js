@@ -21,7 +21,10 @@ const MIXER_PROPS = ['OPACITY', 'VOLUME', 'BRIGHTNESS', 'SATURATION', 'CONTRAST'
 const str = (v) => (v === undefined || v === null ? '' : String(v).trim())
 const truthy = (v) => v === true || v === 'true' || v === 1 || v === '1'
 
-function int(v, what, { min = 0, optional = false } = {}) {
+// tested on 2.5.1: a layer above this (or negative, or not a number) is answered 202 but plays on layer 0
+const MAX_INDEX = 2147483647
+
+function int(v, what, { min = 0, max = MAX_INDEX, optional = false } = {}) {
 	const s = str(v)
 	if (s === '') {
 		if (optional) return null
@@ -30,6 +33,7 @@ function int(v, what, { min = 0, optional = false } = {}) {
 	if (!/^-?\d+$/.test(s)) throw new Error(`${what} must be a whole number, got "${s}"`)
 	const n = parseInt(s, 10)
 	if (n < min) throw new Error(`${what} must be at least ${min}, got ${n}`)
+	if (n > max) throw new Error(`${what} must be at most ${max}, got ${s}`)
 	return n
 }
 

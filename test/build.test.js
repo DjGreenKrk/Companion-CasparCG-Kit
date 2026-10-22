@@ -194,3 +194,9 @@ test('CG data as an object: update({...}) by CG INVOKE', () => {
 	assert.deepStrictEqual(B.cg('ADD', { ...o, variables: '', playonload: true }), ['CG 1-20 ADD 1 "PRELEGENT" 1'])
 	assert.strictEqual(B.cg('INVOKE', { ...o, method: 'next();' }), 'CG 1-20 INVOKE 1 "next()"')
 })
+
+test('layer numbers beyond 32 bits are refused (2.5.1 would play them on layer 0)', () => {
+	assert.deepStrictEqual(B.playLike('PLAY', { ...base, layer: '2147483647', clip_dd: 'X' }), ['PLAY 1-2147483647 "X"'])
+	assert.throws(() => B.playLike('PLAY', { ...base, layer: '2147483648', clip_dd: 'X' }), /at most/)
+	assert.throws(() => B.playLike('PLAY', { ...base, layer: '-5', clip_dd: 'X' }), /at least 0/)
+})
