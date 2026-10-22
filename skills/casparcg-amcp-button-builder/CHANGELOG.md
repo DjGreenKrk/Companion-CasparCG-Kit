@@ -5,6 +5,7 @@ facts or sections; patch: wording and corrections without changing advice.
 
 ## 2.2.0 — 2026-10-22
 
+* [FEATURE] SKILL.md rule 7b ("202 does not mean it did what you meant") and video alpha in 7a
 * [FEATURE] Section "Limits, file names and formats": what the server accepts with `202` but does differently, data sizes, video / audio / still formats that play, file names that work
 * [BUGFIX] A wrong layer number (negative, above 2147483647, with letters) is answered `202` and plays on layer 0; layer range and count measured
 * [BUGFIX] A transition word with a number in a file name starts a transition; clips named like colours play the colour; `<name>_A` / `_ALPHA` files become the key automatically; video alpha must be premultiplied

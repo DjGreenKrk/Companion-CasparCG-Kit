@@ -8,6 +8,7 @@ Limits found by testing CasparCG Server 2.5.1 with wrong and unusual input: wher
 * [CHANGE] Mixer values are checked: opacity 0-100 %, volume and master volume 0-400 % (+12 dB), brightness / saturation / contrast 0-500 %; transitions and animations at most 15000 frames
 * [CHANGE] The log notes when the server will use `<clip>_A` / `<clip>_ALPHA` as the key of a clip
 * [FEATURE] Skill **casparcg-amcp-button-builder 2.2.0**: limits, file names and formats measured on 2.5.1
+* [FEATURE] README: "Known limitations" - what comes from the test machine, from CasparCG 2.5.1 itself and from this module
 
 # Companion CasparCG Kit 3.0.0-beta.2
 

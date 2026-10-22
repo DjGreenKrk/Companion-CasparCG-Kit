@@ -96,6 +96,83 @@ Each skill folder is also a Claude Code plugin (`.claude-plugin/plugin.json`) an
   CasparCG 2.5.1; includes the `gfx.js` runtime, starter templates, a linter and Companion /
   Ontime examples for live timers.
 
+## Known limitations
+
+Everything below was measured, mostly on CasparCG Server 2.5.1 with Companion 5.1.0. Each limit is marked with
+where it comes from, because only some of them apply to your setup:
+
+- **Test machine**: our test server, not CasparCG. It probably does not apply to a playout PC with a GPU.
+- **CasparCG**: the server itself (2.5.1). It applies everywhere, with this module, the official module or any other client.
+- **Module**: this Companion module. It can change in a later version.
+
+### Test machine
+
+The tests ran on a Linux container with 4 vCPU, 4 GB RAM and no GPU (software rendering with Mesa llvmpipe).
+
+| Limit | Measured |
+| --- | --- |
+| Heavy channels do not keep real time | 4 HTML graphics at once on a 1080p50 channel; 1080p ProRes 4444 plus a recording reached ~54 % of real time |
+| ProRes recording is too slow | `prores_ks` encoded ~5 fps of 1080p (H.264 `veryfast` keeps up) |
+| Very large stills stall the server | an 8000×8000 PNG made the server and the container unresponsive for ~15 min |
+| Not tested at all | DeckLink and NDI inputs / outputs, interlaced output, Windows, Companion 5.0.5 |
+
+### CasparCG Server 2.5.1
+
+These are server behaviours. The module works around the ones marked ✔; the rest are documented in
+[HELP.md](companion/HELP.md) and the skill.
+
+**Answered OK, but something else happens**
+
+| Behaviour | Module |
+| --- | --- |
+| A wrong layer (`1--5`, `1-abc`, above 2147483647) plays on layer 0. A wrong channel is rejected with `400` | ✔ refuses the layer |
+| A transition word plus a number in a file name (`promo MIX 2024`) starts that transition | ✔ adds `CUT 0` |
+| A clip named like a colour (`RED`, `#FF0000`) plays the colour | ✔ refuses, asks for the extension |
+| `<name>_A` / `<name>_ALPHA` next to `<name>` becomes its alpha key automatically | logs a note |
+| Files with the same name and different extensions show as one clip; `PLAY` picks one of them | - |
+| Broken, empty or truncated files play nothing | - |
+| No range checks: `VOLUME 100` (+40 dB), `OPACITY 5`, `nan`; a negative animation time skips the change | ✔ checks ranges |
+| `MIX 99999` is accepted (33 minutes) | ✔ at most 15000 frames |
+| `SEEK REL` before the start or past the end: negative time / jump to 0 | ✔ keeps the skip inside the clip |
+| `IMAGE` / `PRINT` save the picture of the previous snapshot | ✔ takes two |
+| Adding an output under a number in use replaces the running recording; an existing file of that name is deleted | `{datetime}` in the default name |
+| A removed stream stays in `INFO` with a frozen frame counter; an SRT listener nobody joined cannot be removed | ✔ running = counter moving; SRT defaults to caller |
+
+**Can stop or crash the server**
+
+| Behaviour |
+| --- |
+| An unknown ffmpeg codec in `ADD … FILE` (`-codec:v nonexistent`): no answer for 12 minutes at full CPU, then a crash. Test custom ffmpeg options off-air |
+| `CALL` on a colour layer never answers; `CALL … SEEK` without a frame number never answers |
+
+**Formats and sizes**
+
+| Limit |
+| --- |
+| Video alpha is read as premultiplied: ProRes 4444 / VP9 with straight alpha shows colour where it should be transparent. Export "premultiplied with black"; PNG alpha is fine |
+| Stills: png, jpg, bmp, tga, tif, webp, jp2. GIF shows its first frame only; animated WebP and SVG do not work; PSD / HEIC / EXR are not supported |
+| `PLAY [HTML] "data:…"` works up to 4067 characters on Linux (path limit; Windows not tested). Template data via `CG UPDATE` / `CG INVOKE`: 1 MB worked |
+| UDP MPEG-TS input needs ~8 s before the first picture and has many seconds of delay. SRT: ~0.7 s to start, ~2 s delay |
+
+**Protocol and state**
+
+| Limit |
+| --- |
+| Replies for different channels can arrive out of order, and replies do not name the channel |
+| OSC sends layer state every frame but no audio levels and no output state, so there is no VU meter from OSC |
+| On Linux the server needs a UTF-8 locale; otherwise non-ASCII media names break the AMCP connection |
+
+### This module (3.0.0-beta.3-by-GC)
+
+| Limit | Why / plan |
+| --- | --- |
+| State comes from `INFO` polling (default every 250 ms): tally, times and the skip position can be up to one interval old; "output is running" goes off ~1.5 s after a stop | OSC would be per frame, but 2.5.1 sends no output state over OSC ([ROADMAP](ROADMAP.md)) |
+| Module API `@companion-module/base` 1.14: Companion 5.1 resets expression mode in fields | API 2.x once production moves past Companion 5.0 |
+| Ranges set by the module: opacity 0-100 %, volume 0-400 %, brightness / saturation / contrast 0-500 %, transitions and animations at most 15000 frames | Safety limits, not server limits; existing buttons beyond them stop with an error in the log |
+| NDI and DeckLink actions build the documented commands but were not tested with a source or card | Needs hardware |
+| Custom HTML graphics: scripts in the HTML are not run; fonts must be installed on the server or loaded by your CSS | By design (data URL host page) |
+| No clip thumbnails on buttons, no chroma-key action | [ROADMAP](ROADMAP.md) |
+
 ## Development
 
 ```sh
