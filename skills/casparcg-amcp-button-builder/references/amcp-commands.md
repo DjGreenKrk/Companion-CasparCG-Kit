@@ -28,8 +28,24 @@ SWAP   [ch1]{-[l1]} [ch2]{-[l2]} {TRANSFORMS}
 - A later `PLAY <ch-layer> <clip>` replaces a background loaded with `LOADBG ... AUTO`; the queued clip never plays.
 - `SEEK`/`LENGTH` are in frames; `LENGTH` counts from the `SEEK` point (`PLAY 1-11 clip SEEK 50 LENGTH 100` plays frames 50-150, then holds the last frame). `CALL 1-11 SEEK 25` jumps while playing (`201 CALL OK` + `25`). `SEEK` past the end is accepted (`202`) but the clip does not advance (INFO time stays 0); a negative `SEEK` overflows the frame counter - don't use either.
 - A clip that ends without `LOOP` and without a following `AUTO` clip holds its last frame on air.
+- `CALL <ch-layer> SEEK` also takes a reference point and an offset: `SEEK REL 50` / `SEEK REL -25` (from the current frame), `SEEK IN`, `SEEK OUT`, `SEEK END`, `SEEK END -50` (50 frames before the end), `SEEK 100 10` (= 110). The reply is `201 CALL OK` + the new frame number, counted in **channel** frames. `CALL … START` is an alias of `IN`. Tested on 2.5.1 - the module's "go to position" and skip ±n s buttons map to these.
 - `LOOP 0` through `CALL` ends a looping clip, but **not immediately**: the current pass plays to its end (`CALL 1-12 LOOP 0` → `201 CALL OK` + `0`). `CALL` with an unknown parameter answers `202` and does nothing.
 - `PLAY 1-12 "STINGER_1"` followed by `LOADBG 1-12 "STINGER_2" AUTO MIX 20 LOOP` is the stinger-hold pattern: play the in-clip, then loop the hold clip when it ends; `LOADBG ... "STINGER_3" AUTO MIX 20` + `CALL ... LOOP 0` releases to the out-clip, which starts mixing 20 frames before the end of the current loop pass. Tested on 2.5.1: no black frame at either change, no visible seam in the loop.
+
+## Other producers (what `PLAY` accepts besides a clip) - tested on 2.5.1
+
+| Source | Command | Notes |
+|---|---|---|
+| Colour | `PLAY 1-5 #FF0000`, `#80FF0000`, `RED` | `#AARRGGBB`; 6 digits = opaque (`#FF0000FF` is **blue** - the wiki's "blue, green, red" order is wrong). Names (any case): `EMPTY BLACK WHITE RED GREEN BLUE ORANGE YELLOW BROWN GRAY TEAL`; others (`pink`, `transparent`, `#f00`) → `404`. Good for a black/colour bed under graphics or a fade to black: `PLAY 1-1 BLACK MIX 25` |
+| Gradient | `PLAY 1-5 #FF0000 #00FF00 #0000FF` | horizontal linear gradient left → right through all colours; the list ends at the first word that is not a colour, so `… #0000FF MIX 25` works. Rotate it with `MIXER … ROTATION` / `FILL` for other directions |
+| Scrolling image (credits, tall PNG) | `PLAY 1-20 credits SPEED 4` / `DURATION 30` / `END_TIME "2026-10-22 18:00:00"` | positive `SPEED` (px per frame) scrolls **up**, negative down; `DURATION` = seconds for the whole image; `BLUR <px>`, `PREMULTIPLY` (straight-alpha PNG), `PROGRESSIVE`. Live speed change: `CALL 1-20 SPEED 10 25 easeinsine` (tweened over 25 frames), `CALL 1-20 SPEED` = query. Without SPEED/DURATION/END_TIME the image is just squeezed into the frame. Interlaced formats: even speeds only |
+| Web page | `PLAY 1-30 [HTML] "https://…"` | `CALL 1-30 "<javascript>"` runs JS on the page (`202` even if the JS throws), `CALL 1-30 RELOAD` reloads it; `CG 1-30 INVOKE 0 "fn()"` also works on such a page. Handy for a web clock / Ontime view that needs a refresh |
+| Another channel / layer | `PLAY 2-10 route://1` / `route://1-10` | no extra latency; scaled to the target channel; `403` for a missing channel |
+| SRT / RTMP / HTTP stream | `PLAY 1-40 srt://host:port?mode=caller`, `PLAY 1-40 "rtmp://…"` | `202` at once, picture after the probe: SRT from another CasparCG ~0.7 s, then ~2 s delay. **UDP mpegts: ~8 s until the first picture and many seconds of delay** - don't use it live. The reply never says if the stream opened; check `INFO` / OSC `foreground/file/time` |
+| NDI | `PLAY 1-40 "ndi://PC NAME/Source"`, `NDI LIST` | only when the NDI runtime is installed on the server; without it `NDI LIST` → `403 NDI LIST FAILED` (not tested with a source) |
+| DeckLink input | `PLAY 1-40 DECKLINK 1 {FORMAT 1080i5000}` | from the source / wiki, not tested (no card) |
+
+`CALL` on a colour layer (`CALL 1-5 RED`) **never answers** - the connection waits; don't send it.
 
 ## Transitions (in LOADBG / PLAY)
 
@@ -149,7 +165,9 @@ REQ <id> <command>                        # reply is prefixed: RES <id> 202 PLAY
 ```
 Tested on 2.5.1:
 - **Screen consumer from AMCP (2.5):** `ADD 1-800 SCREEN [device] X 100 Y 50 WIDTH 640 HEIGHT 360 BORDERLESS NAME Preview` opens a window of that size and position (other flags: `FULLSCREEN`, `KEY_ONLY`, `SBS_KEY`, `NON_INTERACTIVE`, `GPU`, `DELAY`). Remove with `REMOVE 1-800` - give consumers an explicit index when adding; otherwise `REMOVE` needs exactly the same parameters as the `ADD` (the port number shown by INFO, e.g. 601, does not work as an index → `404`).
-- `ADD 1-700 FILE /path/rec.mov -codec:v ... -codec:a ...` records the channel output (ffmpeg arguments); `REMOVE 1-700` stops it.
+- `ADD 1-700 FILE /path/rec.mov -codec:v ... -codec:a ...` records the channel output (ffmpeg arguments, only the `-name:stream` form: `-codec:v`, not `-vcodec`); `REMOVE 1-700` stops it. `STREAM` is the same consumer for a URL: `ADD 1-701 STREAM srt://0.0.0.0:9000?mode=listener -format mpegts -codec:v libx264 -tune:v zerolatency -preset:v ultrafast -filter:v format=yuv420p -codec:a aac` (tested). `202 ADD OK` only means the consumer was created - if ffmpeg died, the next `REMOVE` answers `404`; read the log.
+- **Snapshot**: `ADD 1 IMAGE <name>` (no extension) writes `media/<name>.png`, but on 2.5.1 the PNG shows the picture from the **previous** snapshot (4 of 4 tries, also with the picture still for 2 s); `PRINT 1` has the same bug. Workaround: send `ADD 1 IMAGE tmp`, wait 0.5 s, then `ADD 1 IMAGE <name>` - the second one is current. For checks use a recording.
+- **NDI out** (`ADD 1 NDI NAME Caspar1`) needs the NDI runtime on the server (not tested).
 - `route://<ch>` / `route://<ch>-<layer>` as a clip name plays another channel or layer (scaled to this channel): `PLAY 2-10 route://1-10`. Non-existent channel → `403`.
 - **`CHANNEL_GRID`** always takes the **last** channel, adds a screen window to it and overwrites its layers 1..n with routes of all other channels in a grid. Never send it on a show server whose last channel is on air.
 - `SET 3 MODE 1080p5000` changes a channel's video mode on the fly (`202 SET MODE OK`).
@@ -160,10 +178,32 @@ Tested on 2.5.1:
 ## Queries
 ```
 CLS {dir}   TLS {dir}   FLS   CINF [file]   INFO   INFO [ch]{-[layer]}   INFO CONFIG|PATHS
-VERSION   THUMBNAIL LIST|RETRIEVE|GENERATE|GENERATE_ALL   DIAG   GL INFO   GL GC
+VERSION   THUMBNAIL LIST|RETRIEVE|GENERATE|GENERATE_ALL   DIAG   GL INFO   GL GC   NDI LIST
+OSC SUBSCRIBE [port]   OSC UNSUBSCRIBE [port]
 ```
+Also tested on 2.5.1: `INFO PATHS` → `201` + XML with the absolute media / log / data / template paths; `INFO CONFIG` → the whole loaded config as XML; `GL INFO` → GPU buffer pools; `DIAG` → `202` (opens the diagnostics window - nothing on a headless server); `LOG LEVEL debug` → `202 LOG OK`. `THUMBNAIL LIST` lines: `"720/BELKA_A" 20261021T152348 1736` (name, time, bytes); `THUMBNAIL RETRIEVE <clip>` → `201` + one line of base64 PNG, **256×144**, 2-45 KB (usable as a button image); missing → `501`.
 Tested on 2.5.1: `INFO SYSTEM|SERVER|QUEUES|THREADS|TEMPLATE` no longer exist and silently return the plain `INFO` channel list; `VERSION FLASH|TEMPLATEHOST|CEF|SERVER` all return the server version; `FLS` → `501`; `THUMBNAIL RETRIEVE <clip>` → `201` + base64 PNG (needs the scanner).
 `HELP` no longer exists in 2.5.1 (`400 ERROR`). `CLS`, `CINF`, `TLS` (and thumbnails) are served by the separate **media scanner** (`casparcg-scanner`, port 8000, configured in `<amcp><media-server>`); without it they answer `501 … FAILED`. `CLS` line format: `"NAME"  TYPE  bytes  YYYYMMDDhhmmss  frames  timebase`, e.g. `"STINGER_2"  MOVIE  29261999 20261021145633 100 1/50` - the quickest way to check a clip name and length (in frames) on the server. Names come back upper-case; subfolders as `"NORM/INTRO_11S"`. With scanner 1.4.0 the `{dir}` argument of `CLS` is ignored - it always lists everything. `INFO 1-10` returns the XML of the **whole channel** (layer under `<stage><layer><layer_10>`), not just the layer.
+
+## OSC (live state over UDP) - tested on 2.5.1
+
+Without any configuration the server sends OSC to **every AMCP client's IP on UDP 6250** (config: `<osc><default-port>`, `<disable-send-to-amcp-clients>`, `<predefined-clients>`); `OSC SUBSCRIBE 7001` adds port 7001 for this connection (`OSC UNSUBSCRIBE 7001` stops it; a non-number → `403 OSC SUBSCRIBE BAD PORT`). The subscription ends with the AMCP connection. One bundle per channel **every frame** (50/s on a 50p channel), so it is the fastest way to follow time and state. Addresses in 2.5 (the wiki's list is from 2.0 and does not match):
+
+```
+/channel/1/format                                   "1080p5000"
+/channel/1/framerate                                50 1
+/channel/1/stage/layer/10/foreground/producer       "ffmpeg" | "color" | "html" | "image" | "route" | "empty" ...
+/channel/1/stage/layer/10/foreground/paused         T / F
+/channel/1/stage/layer/10/foreground/loop           T / F
+/channel/1/stage/layer/10/foreground/file/name      "klip"
+/channel/1/stage/layer/10/foreground/file/path      "/opt/casparcg/media/klip.mp4"
+/channel/1/stage/layer/10/foreground/file/time      2.44 10.0      (seconds: current, file length)
+/channel/1/stage/layer/10/foreground/file/clip      0.0 10.0       (seconds: IN, playable length)
+/channel/1/stage/layer/10/foreground/frames_left    n              (only with an AUTO clip queued)
+/channel/1/stage/layer/10/foreground/transition/... type "mix", frame [n, total], direction, producer (during a transition)
+/channel/1/stage/layer/10/background/producer       "empty" | "ffmpeg" ...
+```
+Only active layers are sent. **Not sent on 2.5.1**: audio levels (`/mixer/audio/…` - the source fills them, but nothing arrives) and consumer state (`/output/…`), so OSC gives no VU meter.
 
 ## Response codes
 Meaning per the protocol: 100 info event · 101 event, one data line · 200 ok, multi-line data (ends with an empty line) · 201 ok, one data line · 202 ok, no data · 400 command not understood · 401 illegal channel · 402 missing parameter · 403 illegal parameter · 404 media not found · 500/501 server error · 502 media unreadable · 503 access error.

@@ -3,6 +3,17 @@
 Version in `SKILL.md` (`metadata.version`). Major: advice replaced or removed; minor: new tested
 facts or sections; patch: wording and corrections without changing advice.
 
+## 2.1.0 — 2026-10-22
+
+Compared with the official documentation (old wiki, casparcg.com/docs, v2.5.1-stable source) and measured on 2.5.1 what it leaves out.
+
+* [FEATURE] Other producers: colour (`#AARRGGBB`, names, gradients), scrolling image (`SPEED` / `DURATION` / `END_TIME`, `CALL SPEED` with a tween), `[HTML]` pages with `CALL "<js>"` / `RELOAD`, SRT / UDP / NDI / DeckLink sources with measured start time and delay
+* [FEATURE] `CALL SEEK REL` / `IN` / `OUT` / `END` with an offset
+* [FEATURE] OSC section: default sending to AMCP clients on 6250, `OSC SUBSCRIBE`, the 2.5 address list; audio levels are not sent on 2.5.1
+* [FEATURE] Outputs: `STREAM` (SRT) consumer, `IMAGE` snapshot, NDI out; queries `INFO PATHS` / `CONFIG`, `GL INFO`, `DIAG`, `NDI LIST`, thumbnail format (256×144 PNG)
+* [BUGFIX] `IMAGE` and `PRINT` save the picture from the previous snapshot - take two, use the second
+* [BUGFIX] `CALL` on a colour layer never answers
+
 ## 2.0.0 — 2026-10-21
 
 Verified on a real CasparCG 2.5.1 server and Companion 5.1.0 (recordings analysed frame by frame).
