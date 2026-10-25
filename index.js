@@ -255,11 +255,13 @@ class CasparInstance extends InstanceBase {
 
 	/**
 	 * Tested on 2.5.1: a stream output stays in INFO after REMOVE with its frame counter frozen, and one that never
-	 * connected has no counter. So an output runs only while its counter moves.
+	 * connected has no counter. So an output runs only while its counter moves. NDI has no counter and leaves INFO
+	 * on REMOVE: listed = running.
 	 */
 	outputRunning(channel, index) {
 		const out = this.outputAt(channel, index)
 		if (!S.outputRunning(out)) return false
+		if (out.consumer !== 'ffmpeg') return true
 		const p = this.outputProgress.get(`${parseInt(channel, 10)}-${parseInt(index, 10)}`)
 		const ms = Math.max(1500, 4 * (Number(this.config.poll_interval) || 250))
 		return !!p && Date.now() - p.changedAt < ms

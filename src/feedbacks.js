@@ -105,7 +105,7 @@ module.exports = function feedbackDefinitions(self) {
 		},
 		output_active: {
 			type: 'boolean',
-			name: 'Output is running (recording / stream)',
+			name: 'Output is running (recording / stream / NDI)',
 			description: 'True while the channel has an output with this number (Output: start).',
 			defaultStyle: { bgcolor: RED, color: WHITE },
 			options: [F.channel(), F.number('index', 'Output number', '700')],

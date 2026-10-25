@@ -101,6 +101,7 @@ test('outputs from INFO <channel>: number, path, running time', async () => {
 test('a stream output without a frame counter is not running', () => {
 	assert.strictEqual(S.outputRunning({ consumer: 'ffmpeg', path: 'srt://x', frames: null, seconds: null }), false)
 	assert.strictEqual(S.outputRunning({ consumer: 'ffmpeg', path: 'a.mp4', frames: 0, seconds: 0 }), true)
+	assert.strictEqual(S.outputRunning({ consumer: 'ndi', path: '', frames: null, seconds: null }), true)
 	assert.strictEqual(S.outputRunning(undefined), false)
 })
 

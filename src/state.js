@@ -182,9 +182,10 @@ function parseChannelList(lines) {
 /**
  * An output counts as running only while it reports a frame counter: on 2.5.1 a stream that never connected
  * (SRT listener nobody joined, caller with no listener) stays listed after REMOVE, without <frame> (tested).
+ * Other outputs (NDI) report no frame counter at all and leave INFO as soon as they are removed (tested).
  */
 function outputRunning(out) {
-	return !!out && out.frames !== null
+	return !!out && (out.frames !== null || out.consumer !== 'ffmpeg')
 }
 
 module.exports = {
