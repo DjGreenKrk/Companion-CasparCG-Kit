@@ -121,7 +121,8 @@ The tests ran on a Linux container with 4 vCPU, 4 GB RAM and no GPU (software re
 | Heavy channels do not keep real time | 4 HTML graphics at once on a 1080p50 channel; 1080p ProRes 4444 plus a recording reached ~54 % of real time |
 | ProRes recording is too slow | `prores_ks` encoded ~5 fps of 1080p (H.264 `veryfast` keeps up) |
 | Very large stills stall the server | an 8000×8000 PNG made the server and the container unresponsive for ~15 min |
-| Not tested at all | DeckLink and NDI inputs / outputs, interlaced output, Windows |
+| NDI costs CPU | an NDI output of a 1080p25 channel used ~1.5 cores (software encoding, NDI 6.3) |
+| Not tested at all | DeckLink inputs / outputs, NDI from other machines, interlaced output, Windows |
 
 ### CasparCG Server 2.5.1
 
@@ -177,7 +178,10 @@ These are server behaviours. The module works around the ones marked ✔; the re
 | Module API 2.2 (`@companion-module/base` 2.2.1, Node.js 26): needs Companion 5.1 or newer | Companion 4.x / 5.0: release 3.0.0-beta.3 |
 | Fields that show or hide other fields (transition, source, output type...) cannot be expressions | Required by module API 2.x for visibility rules |
 | Ranges set by the module: opacity 0-100 %, volume 0-400 %, brightness / saturation / contrast 0-500 %, transitions and animations at most 15000 frames | Safety limits, not server limits; existing buttons beyond them stop with an error in the log |
-| NDI and DeckLink actions build the documented commands but were not tested with a source or card | Needs hardware |
+| NDI needs the NDI 6 library on the server (`libndi.so.6`; on Linux also `avahi-daemon`, or no source is found); without it NDI commands fail with 403 / 404 | Tested on Linux with NDI SDK 6.3.2 |
+| NDI output names: accented letters are dropped (`Mównica` is announced as `Mwnica`); the module refuses such a name. `NDI LIST` lags, a stopped source stays listed for seconds | NDI library behaviour |
+| An NDI input keeps the last frame when its source stops and reconnects by itself when the source returns | Tested on 2.5.1 |
+| DeckLink actions build the documented commands but were not tested with a card | Needs hardware |
 | Custom HTML graphics: scripts in the HTML are not run; fonts must be installed on the server or loaded by your CSS | By design (data URL host page) |
 | No clip thumbnails on buttons, no chroma-key action | [ROADMAP](ROADMAP.md) |
 

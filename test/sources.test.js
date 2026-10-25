@@ -74,6 +74,10 @@ test('PLAY_SOURCE builds each kind of source, transition last', () => {
 	)
 	assert.throws(() => p({ source: 'stream', url: 'klip' }), /not a stream address/)
 	assert.strictEqual(p({ source: 'ndi', ndi_name: 'STUDIO PC/Cam 1' }), 'PLAY 1-10 "ndi://STUDIO PC/Cam 1"')
+	assert.strictEqual(p({ source: 'ndi', ndi_dd: 'CASPARCG/test' }), 'PLAY 1-10 "ndi://CASPARCG/test"')
+	assert.strictEqual(p({ source: 'ndi', ndi_dd: 'CASPARCG/test', ndi_name: 'PC/x' }), 'PLAY 1-10 "ndi://PC/x"')
+	// receiving a source with accents works (the sender may not be CasparCG)
+	assert.strictEqual(p({ source: 'ndi', ndi_name: 'PC/Mównica' }), 'PLAY 1-10 "ndi://PC/Mównica"')
 	assert.strictEqual(
 		p({ source: 'decklink', device: '2', format: '1080i5000' }),
 		'PLAY 1-10 DECKLINK 2 FORMAT 1080i5000',
@@ -151,6 +155,10 @@ test('outputs: record presets, date in the name, stream, NDI, remove, snapshot t
 	assert.strictEqual(
 		B.outputAdd({ channel: '1', index: '702', kind: 'ndi', ndi_name: 'Caspar PGM' }),
 		'ADD 1-702 NDI NAME "Caspar PGM"',
+	)
+	assert.throws(
+		() => B.outputAdd({ channel: '1', index: '702', kind: 'ndi', ndi_name: 'Mównica łódź' }),
+		/ó ł ź would be dropped/,
 	)
 	assert.throws(
 		() => B.outputAdd({ channel: '1', index: '', kind: 'file', path: 'x', preset: 'h264' }),

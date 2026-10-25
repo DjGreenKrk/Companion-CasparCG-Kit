@@ -379,7 +379,19 @@ module.exports = function actionDefinitions(self) {
 				F.number('route_layer', 'Source layer (empty = whole channel)', '', {
 					...F.when(F.oneOf('source', ['route'])),
 				}),
-				F.text('ndi_name', 'NDI source (PC NAME/Source)', '', { ...F.when(F.oneOf('source', ['ndi'])) }),
+				{
+					type: 'dropdown',
+					id: 'ndi_dd',
+					label: 'NDI source',
+					default: '',
+					choices: self.ndiChoices,
+					allowCustom: true,
+					tooltip: 'Sources the server saw (NDI LIST, refreshed on connect) or type PC NAME/Source',
+					...F.when(F.oneOf('source', ['ndi'])),
+				},
+				F.text('ndi_name', 'Or NDI source / variable (PC NAME/Source, overrides the list)', '', {
+					...F.when(F.oneOf('source', ['ndi'])),
+				}),
 				F.number('device', 'DeckLink device', '1', { ...F.when(F.oneOf('source', ['decklink'])) }),
 				F.text('format', 'Input format (optional, e.g. 1080i5000)', '', { ...F.when(F.oneOf('source', ['decklink'])) }),
 				...F.transitionFields(self, { sting: false }),
@@ -498,7 +510,11 @@ module.exports = function actionDefinitions(self) {
 					tooltip:
 						'Test them before the show: on 2.5.1 an unknown codec made the server stop answering and crash (tested).',
 				}),
-				F.text('ndi_name', 'NDI name', 'CasparCG', { ...F.when(F.oneOf('kind', ['ndi'])) }),
+				F.text('ndi_name', 'NDI name (letters without accents)', 'CasparCG', {
+					...F.when(F.oneOf('kind', ['ndi'])),
+					tooltip:
+						'Other machines see it as "SERVER PC (name)". The NDI library drops characters like ó or ł from the name (tested on 2.5.1).',
+				}),
 			],
 			callback: run((o) => B.outputAdd(o)),
 		},
@@ -532,7 +548,7 @@ module.exports = function actionDefinitions(self) {
 			),
 		},
 		REFRESH: {
-			name: 'Refresh media and template lists',
+			name: 'Refresh media, template and NDI source lists',
 			options: [],
 			callback: () => self.refreshLists(),
 		},

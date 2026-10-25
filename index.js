@@ -40,6 +40,7 @@ class CasparInstance extends InstanceBase {
 		this.channels = []
 		this.mediaChoices = []
 		this.templateChoices = []
+		this.ndiChoices = []
 		this.state = {} // channel -> { format, framerate, layers }
 		this.paths = null
 		this.knownLayers = new Set()
@@ -178,9 +179,10 @@ class CasparInstance extends InstanceBase {
 
 	async refreshLists() {
 		if (!this.isConnected()) return
-		const [cls, tls] = await Promise.all([
+		const [cls, tls, ndi] = await Promise.all([
 			this.amcp.send('CLS', { timeout: 15000 }),
 			this.amcp.send('TLS', { timeout: 15000 }),
+			this.amcp.send('NDI LIST'),
 		])
 		if (cls.ok) this.media = S.parseCls(cls.data)
 		else this.log('warn', `CLS failed (${cls.code ?? ''} ${cls.text}) - is the media scanner running?`)
@@ -190,6 +192,8 @@ class CasparInstance extends InstanceBase {
 			label: m.type === 'MOVIE' && m.fps ? `${m.name}  (${V.mmss(m.frames / m.fps)})` : m.name,
 		}))
 		this.templateChoices = this.templates.map((t) => ({ id: t, label: t }))
+		// 403 without the NDI library on the server: no list, the name can still be typed
+		this.ndiChoices = ndi.ok ? S.parseNdiList(ndi.data).map((n) => ({ id: n, label: n })) : []
 		this.setVariableValues({ media_count: this.media.length })
 		this.updateDefinitions()
 	}

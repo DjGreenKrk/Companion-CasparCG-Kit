@@ -6,6 +6,7 @@ function build({ media = [], templates = [] } = {}) {
 	const self = {
 		mediaChoices: [],
 		templateChoices: [],
+		ndiChoices: [{ id: 'CASPARCG/test', label: 'CASPARCG/test' }],
 		media,
 		templates,
 		channels: [{ channel: 1 }, { channel: 2 }],

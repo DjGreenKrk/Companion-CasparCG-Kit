@@ -128,3 +128,15 @@ test('upgrade: missing options get their current default (API 2.x skips actions 
 	assert.strictEqual(r.updatedFeedbacks.length, 1)
 	assert.strictEqual(r.updatedConfig, null)
 })
+
+test('NDI LIST lines become ndi:// names', () => {
+	assert.deepStrictEqual(
+		S.parseNdiList([
+			'1 "CASPARCG (test)" 127.0.0.1:5961',
+			'2 "STUDIO PC (Cam (wide))" 192.168.0.20:5962',
+			'3 "CASPARCG (test)" 192.168.0.125:5961',
+			'garbage',
+		]),
+		['CASPARCG/test', 'STUDIO PC/Cam (wide)'],
+	)
+})

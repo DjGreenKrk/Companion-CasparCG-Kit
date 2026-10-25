@@ -155,6 +155,20 @@ function parseTls(lines) {
 		.filter(Boolean)
 }
 
+/**
+ * `NDI LIST` line: `1 "STUDIO PC (Cam 1)" 192.168.0.20:5961` -> "STUDIO PC/Cam 1", the form ndi:// takes
+ * (`ndi://STUDIO PC (Cam 1)` is refused on 2.5.1, tested). The list lags: a source can stay listed for seconds after
+ * it stopped.
+ */
+function parseNdiList(lines) {
+	const out = []
+	for (const l of lines) {
+		const m = /^\d+\s+"(.*?) \((.*)\)"/.exec(l)
+		if (m && !out.includes(`${m[1]}/${m[2]}`)) out.push(`${m[1]}/${m[2]}`)
+	}
+	return out
+}
+
 /** `INFO` without arguments: "1 1080p5000 PLAYING" lines. */
 function parseChannelList(lines) {
 	const out = []
@@ -180,6 +194,7 @@ module.exports = {
 	layerState,
 	parseCls,
 	parseTls,
+	parseNdiList,
 	parseChannelList,
 	nameFromPath,
 	normName,

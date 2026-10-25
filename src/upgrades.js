@@ -124,7 +124,16 @@ function fillMissingDefaults(_context, props) {
 
 /** { actions: { id: { option: default } }, feedbacks: {...} } from the definitions, built without a connection. */
 function currentDefaults() {
-	const self = { mediaChoices: [], templateChoices: [], media: [], templates: [], channels: [], config: {}, log() {} }
+	const self = {
+		mediaChoices: [],
+		templateChoices: [],
+		ndiChoices: [],
+		media: [],
+		templates: [],
+		channels: [],
+		config: {},
+		log() {},
+	}
 	const pick = (defs) =>
 		Object.fromEntries(
 			Object.entries(defs).map(([id, d]) => [
@@ -135,6 +144,7 @@ function currentDefaults() {
 	return { actions: pick(require('./actions')(self)), feedbacks: pick(require('./feedbacks')(self)) }
 }
 
-module.exports = [v3, fillMissingDefaults]
+// fillMissingDefaults again: 3.1.0-beta.2 added the NDI source list (ndi_dd) to "Play colour, web page...".
+module.exports = [v3, fillMissingDefaults, fillMissingDefaults]
 module.exports.optionAccess = optionAccess
 module.exports.currentDefaults = currentDefaults

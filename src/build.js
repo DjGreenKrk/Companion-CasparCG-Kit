@@ -416,7 +416,7 @@ function sourceSpec(o) {
 			return '"' + url.replace(/"/g, '\\"') + '"'
 		}
 		case 'ndi': {
-			const name = str(o.ndi_name)
+			const name = str(o.ndi_name) || str(o.ndi_dd)
 			if (!name) throw new Error('NDI needs a source name (PC NAME/Source)')
 			return '"' + ('ndi://' + name.replace(/^ndi:\/\//i, '')).replace(/"/g, '\\"') + '"'
 		}
@@ -549,6 +549,10 @@ function outputAdd(o, now) {
 	if (kind === 'ndi') {
 		const name = str(o.ndi_name)
 		if (!name) throw new Error('NDI output needs a name')
+		// the NDI library drops them: "Mównica" is announced as "Mwnica" (tested on 2.5.1 with NDI 6.3)
+		const bad = [...new Set(name.match(/[^\x20-\x7e]/g) || [])]
+		if (bad.length)
+			throw new Error(`NDI name "${name}": ${bad.join(' ')} would be dropped by NDI - use letters without accents`)
 		return `ADD ${at} NDI NAME ${quote(name)}`
 	}
 	throw new Error(`Unknown output "${kind}"`)
