@@ -1,6 +1,6 @@
 # Companion CasparCG Kit roadmap
 
-Work left out of 3.1.0-beta.1. Each item is a separate change, taken on when it brings a real
+Work left out of 3.1.0-beta.2. Each item is a separate change, taken on when it brings a real
 benefit.
 
 ## Not yet verified
@@ -15,6 +15,5 @@ benefit.
 
 | Item | Why | Notes |
 | --- | --- | --- |
-| OSC instead of `INFO` polling | Less traffic, state every frame | Measured on 2.5.1: sent by default to every AMCP client on UDP 6250, a bundle per channel every frame; **no audio levels and no output state** in 2.5.1, so it would replace layer polling only (outputs still need `INFO`) |
 | Clip thumbnails on buttons | Easier to find a clip on a page of presets | `THUMBNAIL RETRIEVE` gives a 256×144 PNG (base64, 2-45 KB); needs a cache and a resize to the button |
 | Chroma key action | Green screen from a DeckLink input | `MIXER CHROMA` (2.5 form with 8 values, or the old `GREEN threshold softness spill`); needs a camera source to tune the defaults |

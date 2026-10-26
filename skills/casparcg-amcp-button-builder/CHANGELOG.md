@@ -3,6 +3,12 @@
 Version in `SKILL.md` (`metadata.version`). Major: advice replaced or removed; minor: new tested
 facts or sections; patch: wording and corrections without changing advice.
 
+## 2.3.0 — 2026-10-26
+
+* [FEATURE] NDI tested with the NDI 6.3.2 library: what the server needs (`libndi.so.6`, avahi on Linux), `ndi://PC/Source` form, freeze and reconnect, ASCII-only output names, CPU cost, `INFO` of an NDI output
+* [FEATURE] OSC: frames split into several bundles with one timetag; why OSC beats `INFO` polling (every poll is in the server log)
+* [CHANGE] Companion CasparCG Kit 3.1.0-beta.2: live state over OSC, NDI source list, NDI name check
+
 ## 2.2.1 — 2026-10-22
 
 * [CHANGE] Companion CasparCG Kit 3.1: module API 2.2 - Companion resolves variables, expressions work in fields again, Companion 5.1+ needed

@@ -1,3 +1,16 @@
+# Companion CasparCG Kit 3.1.0-beta.2
+
+Live state over OSC, so the module no longer fills the server log, and NDI checked with the NDI 6 library.
+
+* [FEATURE] Live state (tally, layer state, times, feedbacks, variables) comes over OSC: the module asks for it with `OSC SUBSCRIBE` on a free UDP port (or a fixed one in the connection settings). Polling `INFO` wrote every poll and its whole XML reply to the server log; now Companion adds nothing to it while nothing changes
+* [CHANGE] `INFO` is read only for outputs (not in OSC on 2.5.1): once on connect, after the module's own `ADD` / `REMOVE`, and every 2 s while a recording or stream runs
+* [FEATURE] With no OSC for 3 s (firewall, Docker) the module polls `INFO` and says so in the log, and stops when OSC is back. "Live state from: INFO polling" keeps the old behaviour
+* [BUGFIX] "Output is running" goes off as soon as the server accepts the module's `REMOVE` (a stopped recording stays in `INFO` with its counter frozen)
+* [FEATURE] NDI source list in "Play colour, web page...", filled from `NDI LIST` (as `PC/Source`, the form `ndi://` takes); the text field still overrides it
+* [BUGFIX] "Output is running" works for NDI outputs (they report no frame counter)
+* [CHANGE] NDI output names with accented letters are refused: the NDI library drops them (`Mównica` was announced as `Mwnica`)
+* [FEATURE] Skill **casparcg-amcp-button-builder 2.3.0**: NDI and OSC facts measured on 2.5.1
+
 # Companion CasparCG Kit 3.1.0-beta.1
 
 Moved to Companion's newest module API 2.2 (`@companion-module/base` 2.2.1) on the Node.js 26 runtime. Needs Companion 5.1 or newer; tested on Companion 5.1.1 with CasparCG Server 2.5.1. For Companion 4.x or 5.0 keep 3.0.0-beta.3.

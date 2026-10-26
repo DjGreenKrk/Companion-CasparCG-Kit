@@ -1,7 +1,9 @@
+const dgram = require('node:dgram')
 const { InstanceBase, TCPHelper, InstanceStatus, Regex } = require('@companion-module/base')
 const { AmcpClient } = require('./src/amcp')
 const B = require('./src/build')
 const S = require('./src/state')
+const { OscFrames, channelTree } = require('./src/osc')
 const V = require('./src/variables')
 const actionDefinitions = require('./src/actions')
 const feedbackDefinitions = require('./src/feedbacks')
@@ -10,6 +12,8 @@ const upgradeScripts = require('./src/upgrades')
 
 const CONFIG_DEFAULTS = {
 	port: '5250',
+	state_source: 'osc',
+	osc_port: 0,
 	poll_interval: 250,
 	watch_layers: '1-10',
 	preset_channel: 1,
@@ -17,6 +21,12 @@ const CONFIG_DEFAULTS = {
 	preset_cg_layer: 20,
 	log_commands: false,
 }
+
+// OSC: no frame for this long -> poll INFO instead; outputs (not in OSC) are read this often while one runs
+const OSC_SILENCE_MS = 3000
+const OUTPUT_POLL_MS = 2000
+// after the module adds / removes an output, watch that channel's outputs for this long
+const OUTPUT_WATCH_MS = 5000
 
 // output numbers used by the record / stream presets
 const PRESET_OUTPUTS = [700, 701]
@@ -51,6 +61,9 @@ class CasparInstance extends InstanceBase {
 		this.chain = Promise.resolve()
 		this.pendingClears = new Map()
 		this.polling = new Set()
+		this.outputWatchUntil = new Map() // channel -> time
+		this.outputPolledAt = new Map() // channel -> time
+		this.lastOscAt = 0
 	}
 
 	async init(config) {
@@ -61,6 +74,7 @@ class CasparInstance extends InstanceBase {
 
 	async configUpdated(config) {
 		this.config = { ...CONFIG_DEFAULTS, ...stripEmpty(config) }
+		this.closeOsc() // the port may have changed
 		this.knownLayers = new Set()
 		this.knownOutputs = new Set()
 		this.updateDefinitions()
@@ -69,6 +83,9 @@ class CasparInstance extends InstanceBase {
 
 	async destroy() {
 		this.stopPolling()
+		this.stopWatch()
+		this.closeOsc()
+		clearTimeout(this.publishTimer)
 		clearInterval(this.errorTimer)
 		for (const key of [...this.pendingClears.keys()]) this.cancelClear(key)
 		if (this.socket) this.socket.destroy()
@@ -80,10 +97,35 @@ class CasparInstance extends InstanceBase {
 			{ type: 'textinput', id: 'host', label: 'CasparCG server IP', width: 6, default: '', regex: Regex.HOSTNAME },
 			{ type: 'textinput', id: 'port', label: 'AMCP port', width: 3, default: '5250', regex: Regex.PORT },
 			{
+				type: 'dropdown',
+				id: 'state_source',
+				label: 'Live state (tally, times, feedbacks) from',
+				tooltip:
+					'OSC: the server sends the state every frame and nothing is written to its log. INFO polling: every poll and its reply are written to the server log.',
+				width: 6,
+				default: 'osc',
+				choices: [
+					{ id: 'osc', label: 'OSC (recommended, keeps the server log clean)' },
+					{ id: 'poll', label: 'INFO polling' },
+				],
+			},
+			{
+				type: 'number',
+				id: 'osc_port',
+				label: 'OSC port on this computer (0 = any free port)',
+				tooltip:
+					'UDP port the server sends OSC to (the module asks for it with OSC SUBSCRIBE). Set a fixed port when Companion runs in Docker or behind a firewall.',
+				width: 6,
+				default: 0,
+				min: 0,
+				max: 65535,
+			},
+			{
 				type: 'number',
 				id: 'poll_interval',
-				label: 'State polling interval (ms, 0 = off)',
-				tooltip: 'Feedbacks and variables come from INFO <channel>. 250 ms is light for the server.',
+				label: 'INFO polling interval (ms, 0 = off)',
+				tooltip:
+					'With INFO polling: how often each channel is asked. With OSC: used only while no OSC arrives. 250 ms is light for the server.',
 				width: 4,
 				default: 250,
 				min: 0,
@@ -123,6 +165,7 @@ class CasparInstance extends InstanceBase {
 
 	connect() {
 		this.stopPolling()
+		this.stopWatch()
 		if (this.socket) {
 			this.socket.destroy()
 			delete this.socket
@@ -164,12 +207,15 @@ class CasparInstance extends InstanceBase {
 		const info = await this.amcp.send('INFO')
 		if (info.ok) this.channels = S.parseChannelList(info.data)
 		await this.refreshLists()
-		this.startPolling()
+		if (this.config.state_source === 'poll') this.startPolling()
+		else await this.startOsc()
 	}
 
 	onDisconnect() {
 		if (!this.amcp) return
 		this.stopPolling()
+		this.stopWatch()
+		this.oscFrames?.reset()
 		this.amcp.reset()
 		this.state = {}
 		this.setVariableValues({ connected: 'no' })
@@ -216,22 +262,114 @@ class CasparInstance extends InstanceBase {
 	}
 
 	poll() {
-		for (const { channel } of this.channels) {
-			if (this.polling.has(channel)) continue // previous answer still pending
-			this.polling.add(channel)
-			this.amcp
-				.send(`INFO ${channel}`, { timeout: 3000 })
-				.then(async (r) => {
-					if (r.ok && r.data[0]) {
-						this.state[channel] = await S.parseChannelInfo(r.data[0], this.paths)
-						this.trackOutputs(channel)
-					} else if (!r.noReply) {
-						this.state[channel] = { format: '', framerate: 0, layers: {} }
+		for (const { channel } of this.channels) this.pollChannel(channel)
+	}
+
+	pollChannel(channel) {
+		if (this.polling.has(channel)) return // previous answer still pending
+		this.polling.add(channel)
+		this.outputPolledAt.set(channel, Date.now())
+		this.amcp
+			.send(`INFO ${channel}`, { timeout: 3000 })
+			.then(async (r) => {
+				if (r.ok && r.data[0]) {
+					this.state[channel] = await S.parseChannelInfo(r.data[0], this.paths)
+					this.trackOutputs(channel)
+				} else if (!r.noReply) {
+					this.state[channel] = { format: '', framerate: 0, layers: {} }
+				}
+				this.publishState()
+			})
+			.catch((e) => this.log('warn', `INFO ${channel}: ${e.message}`))
+			.finally(() => this.polling.delete(channel))
+	}
+
+	// ---------------------------------------------------------------- OSC state
+
+	/** Open the UDP port, ask the server for OSC on it, read every channel once (outputs are not in OSC). */
+	async startOsc() {
+		try {
+			if (!this.oscSocket) {
+				const sock = dgram.createSocket('udp4')
+				this.oscFrames = new OscFrames((ch, messages) => this.onOscFrame(ch, messages))
+				sock.on('message', (buf) => {
+					this.lastOscAt = Date.now()
+					try {
+						this.oscFrames.packet(buf)
+					} catch (e) {
+						this.log('debug', `OSC packet not read: ${e.message}`)
 					}
-					this.publishState()
 				})
-				.catch((e) => this.log('warn', `INFO ${channel}: ${e.message}`))
-				.finally(() => this.polling.delete(channel))
+				await new Promise((resolve, reject) => {
+					sock.once('error', reject)
+					sock.bind(Number(this.config.osc_port) || 0, () => {
+						sock.off('error', reject)
+						resolve()
+					})
+				})
+				sock.on('error', (e) => this.log('error', `OSC port: ${e.message}`))
+				this.oscSocket = sock
+			}
+			const port = this.oscSocket.address().port
+			const r = await this.amcp.send(`OSC SUBSCRIBE ${port}`)
+			if (!r.ok) throw new Error(`OSC SUBSCRIBE ${port}: ${r.code ?? ''} ${r.text ?? ''}`)
+			this.log('info', `Live state over OSC on UDP port ${port}`)
+		} catch (e) {
+			this.log('warn', `OSC not available (${e.message}) - using INFO polling`)
+			this.closeOsc()
+			this.startPolling()
+			return
+		}
+		this.oscSince = Date.now()
+		this.poll()
+		this.stopWatch()
+		this.watchTimer = setInterval(() => this.watchOsc(), 1000)
+	}
+
+	closeOsc() {
+		if (this.oscSocket) this.oscSocket.close()
+		delete this.oscSocket
+		this.oscFrames?.reset()
+	}
+
+	stopWatch() {
+		if (this.watchTimer) clearInterval(this.watchTimer)
+		delete this.watchTimer
+	}
+
+	onOscFrame(channel, messages) {
+		const st = S.channelFromTree(channelTree(messages).tree, this.paths)
+		this.state[channel] = { ...st, outputs: this.state[channel]?.outputs || {} }
+		// the server sends 25-50 frames a second per channel; Companion gets at most 10 updates a second
+		if (!this.publishTimer)
+			this.publishTimer = setTimeout(() => {
+				delete this.publishTimer
+				this.publishState()
+			}, 100)
+	}
+
+	/** Every second: fall back to polling while OSC is silent; read outputs while one runs or was just changed. */
+	watchOsc() {
+		if (!this.isConnected()) return
+		const now = Date.now()
+		const silent = now - Math.max(this.lastOscAt, this.oscSince) > OSC_SILENCE_MS
+		if (silent && !this.pollTimer) {
+			this.log(
+				'warn',
+				`No OSC from the server for ${OSC_SILENCE_MS / 1000} s (firewall? UDP port ${this.oscSocket?.address().port}) - polling INFO until it comes back`,
+			)
+			this.startPolling()
+		} else if (!silent && this.pollTimer) {
+			this.log('info', 'OSC is back - INFO polling stopped')
+			this.stopPolling()
+		}
+		if (this.pollTimer) return
+		for (const { channel } of this.channels) {
+			const outs = this.state[channel]?.outputs || {}
+			const running = Object.entries(outs).some(([n, o]) => o.consumer === 'ffmpeg' && this.outputRunning(channel, n))
+			const watched = now < (this.outputWatchUntil.get(channel) || 0)
+			if ((running || watched) && now - (this.outputPolledAt.get(channel) || 0) >= (watched ? 900 : OUTPUT_POLL_MS))
+				this.pollChannel(channel)
 		}
 	}
 
@@ -263,7 +401,10 @@ class CasparInstance extends InstanceBase {
 		if (!S.outputRunning(out)) return false
 		if (out.consumer !== 'ffmpeg') return true
 		const p = this.outputProgress.get(`${parseInt(channel, 10)}-${parseInt(index, 10)}`)
-		const ms = Math.max(1500, 4 * (Number(this.config.poll_interval) || 250))
+		const ms =
+			this.watchTimer && !this.pollTimer
+				? 2.5 * OUTPUT_POLL_MS
+				: Math.max(1500, 4 * (Number(this.config.poll_interval) || 250))
 		return !!p && Date.now() - p.changedAt < ms
 	}
 
@@ -373,8 +514,19 @@ class CasparInstance extends InstanceBase {
 					this.scheduleClear(l.key, l.after, l.cmd)
 					continue
 				}
+				const out = /^(?:ADD|REMOVE)\s+(\d+)/i.exec(l.cmd)
+				if (out) this.outputWatchUntil.set(Number(out[1]), Date.now() + OUTPUT_WATCH_MS) // outputs are not in OSC
 				const send = l.retry403 ? this.sendUntilReady(l.cmd) : this.amcp.send(l.cmd)
-				const check = send.then((r) => this.checkReply(r))
+				const check = send.then((r) => {
+					// a stopped recording / stream stays in INFO with its counter frozen: off at once, not after the timeout
+					const rm = /^REMOVE\s+(\d+)-(\d+)\s*$/i.exec(l.cmd)
+					if (rm && r.ok) {
+						const key = `${rm[1]}-${rm[2]}`
+						this.outputProgress.set(key, { frames: this.outputAt(rm[1], rm[2])?.frames, changedAt: 0 })
+						this.publishState()
+					}
+					return this.checkReply(r)
+				})
 				// a line that prepares the next one (MIXER CLEAR before PLAY) must be done first
 				if (i < lines.length - 1) await check
 			}

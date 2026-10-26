@@ -15,7 +15,7 @@ Node.js 26). For Companion 4.x or 5.0 use release 3.0.0-beta.3 (module API 1.14)
 
 | Part | Version | What it does |
 | --- | --- | --- |
-| Companion module (`companion/`, `src/`) | 3.1.0-beta.1-by-GC | Controls CasparCG Server from Companion |
+| Companion module (`companion/`, `src/`) | 3.1.0-beta.2-by-GC | Controls CasparCG Server from Companion |
 | Skill [casparcg-amcp-button-builder](skills/casparcg-amcp-button-builder/) | 2.2.1 | Writes, reviews and debugs AMCP commands and the Companion buttons that send them |
 | Skill [event-lower-third-generator](skills/event-lower-third-generator/) | 0.1.0 | Generates HTML lower thirds and event graphics (speaker, timer, ticker…) from client materials |
 
@@ -70,7 +70,8 @@ What it adds to the official module:
   Companion resolves them (module API 2.2), and any field can be switched to an expression. The official
   2.1.2 resolves variables only in the raw command, sends local variables as `$NA`, and on Companion 5.1 loses
   expression mode.
-- **Live state** from `INFO <channel>` polling: tally (on air / cued), layer state, "ending soon",
+- **Live state** over OSC, every frame and without a line in the server log (`INFO` polling as an option and
+  as the fallback when no OSC arrives): tally (on air / cued), layer state, "ending soon",
   connection and command errors as feedbacks; per-layer variables such as
   `$(caspar:c1_l10_remaining)`.
 - **Presets** generated from the server's media and template lists (one template preset per kind - Companion lists a
@@ -170,11 +171,12 @@ These are server behaviours. The module works around the ones marked ✔; the re
 | OSC sends layer state every frame but no audio levels and no output state, so there is no VU meter from OSC |
 | On Linux the server needs a UTF-8 locale; otherwise non-ASCII media names break the AMCP connection |
 
-### This module (3.1.0-beta.1-by-GC)
+### This module (3.1.0-beta.2-by-GC)
 
 | Limit | Why / plan |
 | --- | --- |
-| State comes from `INFO` polling (default every 250 ms): tally, times and the skip position can be up to one interval old; "output is running" goes off ~1.5 s after a stop | OSC would be per frame, but 2.5.1 sends no output state over OSC ([ROADMAP](ROADMAP.md)) |
+| Layer state comes over OSC: Companion has to receive UDP from the server (any free port, or a fixed one in the connection settings - Docker, firewall). With no OSC for 3 s the module polls `INFO` and says so in the log | Every polled `INFO` and its whole XML reply are written to the server log (~9 KB/s for 5 channels every 250 ms) |
+| Outputs (recording, stream, NDI) are not in OSC: the module reads `INFO` of a channel after its own `ADD` / `REMOVE` and every 2 s while a recording or stream runs, so an output started by another client shows on the next such read; recording time variables move in 2 s steps | 2.5.1 sends no output state over OSC |
 | Module API 2.2 (`@companion-module/base` 2.2.1, Node.js 26): needs Companion 5.1 or newer | Companion 4.x / 5.0: release 3.0.0-beta.3 |
 | Fields that show or hide other fields (transition, source, output type...) cannot be expressions | Required by module API 2.x for visibility rules |
 | Ranges set by the module: opacity 0-100 %, volume 0-400 %, brightness / saturation / contrast 0-500 %, transitions and animations at most 15000 frames | Safety limits, not server limits; existing buttons beyond them stop with an error in the log |

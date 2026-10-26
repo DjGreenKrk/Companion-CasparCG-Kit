@@ -74,6 +74,11 @@ async function parseChannelInfo(xml, paths) {
 	const doc = await parseStringPromise(xml, { explicitArray: false })
 	const ch = doc?.channel
 	if (!ch) throw new Error('INFO reply is not a <channel> document')
+	return channelFromTree(ch, paths)
+}
+
+/** The <channel> element as xml2js reads it, or the same tree built from an OSC frame (osc.js). */
+function channelFromTree(ch, paths) {
 	const fr = arr(ch.framerate).map(Number)
 	const framerate = fr.length > 1 && fr[1] ? fr[0] / fr[1] : fr[0] || 0
 	const layers = {}
@@ -191,6 +196,7 @@ function outputRunning(out) {
 module.exports = {
 	outputRunning,
 	parseChannelInfo,
+	channelFromTree,
 	parsePaths,
 	layerState,
 	parseCls,
