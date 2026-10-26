@@ -1,7 +1,7 @@
 {
   "$schema": "https://anthropic.com/claude-code/plugin.schema.json",
   "name": "casparcg-amcp-button-builder",
-  "version": "2.2.1",
+  "version": "2.3.0",
   "description": "Writes, reviews and debugs CasparCG AMCP commands and the Bitfocus Companion buttons that send them (lower thirds, stingers, intros, transitions, mixer, templates), with facts tested on CasparCG 2.5.1.",
   "author": {
     "name": "Julian Szymański / GreenCrew",
